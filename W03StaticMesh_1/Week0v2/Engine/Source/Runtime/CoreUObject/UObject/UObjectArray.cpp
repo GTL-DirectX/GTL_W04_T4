@@ -21,6 +21,7 @@ void FUObjectArray::ProcessPendingDestroyObjects()
     for (UObject* Object : PendingDestroyObjects)
     {
         delete Object;
+        Object = nullptr;
     }
     PendingDestroyObjects.Empty();
 }

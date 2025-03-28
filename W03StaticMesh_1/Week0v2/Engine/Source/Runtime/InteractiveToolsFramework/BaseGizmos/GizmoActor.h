@@ -3,12 +3,12 @@
 
 
 class UStaticMeshComponent;
-class UTransformGizmo : public AActor
+class AGizmoActor : public AActor
 {
-    DECLARE_CLASS(UTransformGizmo, AActor)
+    DECLARE_CLASS(AGizmoActor, AActor)
 
 public:
-    UTransformGizmo();
+    AGizmoActor();
 
     virtual void Tick(float DeltaTime) override;
 

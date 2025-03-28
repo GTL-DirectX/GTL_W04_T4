@@ -64,7 +64,7 @@ void UGizmoBaseComponent::TickComponent(float DeltaTime)
             float scaler = abs(
                 (activeViewport->ViewTransformPerspective.GetLocation() - PickedActor->GetRootComponent()->GetLocalLocation()).Magnitude()
             );
-            scaler *= 0.1f;
+            scaler *= 0.01f;
             RelativeScale3D = FVector( scaler,scaler,scaler);
         }
         else

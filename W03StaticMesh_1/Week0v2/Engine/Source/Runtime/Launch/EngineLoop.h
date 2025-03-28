@@ -24,6 +24,7 @@ public:
     void Exit();
     float GetAspectRatio(IDXGISwapChain* swapChain) const;
     void Input();
+    void CreateNewWorld();
 
 private:
     void WindowInit(HINSTANCE hInstance);

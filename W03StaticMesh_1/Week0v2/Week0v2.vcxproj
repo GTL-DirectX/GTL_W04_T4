@@ -213,7 +213,7 @@
     <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Components\LightComponent.cpp" />
     <ClCompile Include="Engine\Source\Editor\PropertyEditor\ShowFlags.cpp" />
     <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Components\SkySphereComponent.cpp" />
-    <ClCompile Include="Engine\Source\Runtime\InteractiveToolsFramework\BaseGizmos\TransformGizmo.cpp" />
+    <ClCompile Include="Engine\Source\Runtime\InteractiveToolsFramework\BaseGizmos\GizmoActor.cpp" />
     <ClCompile Include="Engine\Source\Runtime\Launch\Launch.cpp" />
     <ClCompile Include="Engine\Source\Runtime\Windows\D3D11RHI\GraphicDevice.cpp" />
     <ClCompile Include="Engine\Source\Runtime\CoreUObject\UObject\Object.cpp" />
@@ -299,7 +299,7 @@
     <ClInclude Include="Engine\Source\Editor\PropertyEditor\ShowFlags.h" />
     <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Components\SkySphereComponent.h" />
     <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Engine\Texture.h" />
-    <ClInclude Include="Engine\Source\Runtime\InteractiveToolsFramework\BaseGizmos\TransformGizmo.h" />
+    <ClInclude Include="Engine\Source\Runtime\InteractiveToolsFramework\BaseGizmos\GizmoActor.h" />
     <ClInclude Include="Engine\Source\Runtime\CoreUObject\UObject\ObjectFactory.h" />
     <ClInclude Include="Engine\Source\Editor\UnrealEd\PrimitiveBatch.h" />
     <ClInclude Include="Engine\Source\Runtime\Engine\Classes\Components\PrimitiveComponent.h" />

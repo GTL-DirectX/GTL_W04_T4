@@ -2,48 +2,39 @@
 #include "UnrealEd/SceneMgr.h"
 #include "JSON/json.hpp"
 #include "UObject/Object.h"
-#include "Components/SphereComp.h"
 #include "Components/CubeComp.h"
-#include "BaseGizmos/GizmoArrowComponent.h"
-#include "UObject/ObjectFactory.h"
 #include <fstream>
 
 #include "EditorViewportClient.h"
-#include "Components/UBillboardComponent.h"
-#include "Components/LightComponent.h"
-#include "Components/SkySphereComponent.h"
-#include "Camera/CameraComponent.h"
+#include "World.h"
 #include "Engine/FLoaderOBJ.h"
+#include "Engine/StaticMeshActor.h"
+#include "GameFramework/Actor.h"
 #include "LevelEditor/SLevelEditor.h"
-#include "UObject/Casts.h"
 
 using json = nlohmann::json;
 
 bool FSceneMgr::ParseSceneData(const FString& jsonStr)
 {
-    uint32 NextUUID = -1;
-
     try {
         json j = json::parse(*jsonStr);
 
         // 버전과 NextUUID 읽기
-        NextUUID = j["NextUUID"].get<int>();
-
+        
         // Primitives 처리 (C++14 스타일)
         auto primitives = j["Primitives"];
         for (auto it = primitives.begin(); it != primitives.end(); ++it) {
             int id = std::stoi(it.key());  // Key는 문자열, 숫자로 변환
             const json& value = it.value();
 
-            UObject* obj = nullptr;
+            AStaticMeshActor* obj = nullptr;
             
             if (value.contains("Type"))
             {
                 const FString TypeName = value["Type"].get<std::string>();
                 if (TypeName == "StaticMeshComp")
                 {
-                    obj = FObjectFactory::ConstructObject<UStaticMeshComponent>();
-                    obj->UUID = id;
+                     obj = GEngineLoop.GetWorld()->SpawnActor<AStaticMeshActor>();
                 }
                 // else if (TypeName == UCubeComp::StaticClass()->GetName())
                 // {
@@ -72,46 +63,42 @@ bool FSceneMgr::ParseSceneData(const FString& jsonStr)
             {
                 const FString ObjStaticMeshAssetPath = value["ObjStaticMeshAsset"].get<std::string>();
                 UStaticMesh* NewMesh = FManagerOBJ::CreateStaticMesh(ObjStaticMeshAssetPath);
-
-                // Setup StaticMesh
-                UStaticMeshComponent* StaticMesh = dynamic_cast<UStaticMeshComponent*>(obj);
-                StaticMesh->SetStaticMesh(NewMesh);
+                obj->GetStaticMeshComponent()->SetStaticMesh(NewMesh);
             }
 
-            USceneComponent* SceneComp = dynamic_cast<USceneComponent*>(obj);
             if (value.contains("Location"))
             {
-                SceneComp->SetLocation(FVector(
+                obj->SetActorLocation(FVector(
                 value["Location"].get<std::vector<float>>()[0],
                 value["Location"].get<std::vector<float>>()[1],
                 value["Location"].get<std::vector<float>>()[2]));
             }
             if (value.contains("Rotation"))
             {
-                SceneComp->SetRotation(FVector(
+                obj->SetActorRotation(FVector(
                 value["Rotation"].get<std::vector<float>>()[0],
                 value["Rotation"].get<std::vector<float>>()[1],
                 value["Rotation"].get<std::vector<float>>()[2]));
             }
             if (value.contains("Scale"))
             {
-                SceneComp->SetScale(FVector(
+                obj->SetActorScale(FVector(
                 value["Scale"].get<std::vector<float>>()[0],
                 value["Scale"].get<std::vector<float>>()[1],
                 value["Scale"].get<std::vector<float>>()[2]));
             }
-            if (value.contains("Type"))
-            {
-                if (UPrimitiveComponent* primitiveComp = Cast<UPrimitiveComponent>(SceneComp))
-                {
-                    primitiveComp->SetType(value["Type"].get<std::string>());
-                }
-                else
-                {
-                    std::string name = value["Type"].get<std::string>();
-                    SceneComp->NamePrivate = name.c_str();
-                }
-            }
+            // if (value.contains("Type"))
+            // {
+            //     if (UPrimitiveComponent* primitiveComp = Cast<UPrimitiveComponent>(SceneComp))
+            //     {
+            //         primitiveComp->SetType(value["Type"].get<std::string>());
+            //     }
+            //     else
+            //     {
+            //         std::string name = value["Type"].get<std::string>();
+            //         // obj->NamePrivate = name.c_str();
+            //     }
+            // }
         }
 
         auto perspectiveCamera = j["PerspectiveCamera"];
@@ -156,7 +143,6 @@ bool FSceneMgr::ParseSceneData(const FString& jsonStr)
         return false;
     }
     
-    UEngineStatics::NextUUID = NextUUID;
     return true;
 }
 

@@ -124,8 +124,7 @@ int32 FEngineLoop::Init(HINSTANCE hInstance)
     LevelEditor = new SLevelEditor();
     LevelEditor->Initialize();
 
-    GWorld = new UWorld;
-    GWorld->Initialize();
+    CreateNewWorld();
 
     return 0;
 }
@@ -194,7 +193,8 @@ void FEngineLoop::Tick()
         Input();
         GWorld->Tick(elapsedTime);
         LevelEditor->Tick(elapsedTime);
-        Render();
+        if (GWorld)
+            Render();
         UIMgr->BeginFrame();
         UnrealEditor->Render();
 
@@ -242,6 +242,18 @@ void FEngineLoop::Input()
     {
         bTestInput = false;
     }
+}
+
+void FEngineLoop::CreateNewWorld()
+{
+    if (GWorld)
+    {
+        GWorld->Release();
+        GWorld = nullptr;
+    }
+
+    GWorld = FObjectFactory::ConstructObject<UWorld>();
+    GWorld->Initialize();
 }
 
 void FEngineLoop::Exit()

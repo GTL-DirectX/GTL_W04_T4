@@ -1,4 +1,4 @@
-#include "TransformGizmo.h"
+#include "GizmoActor.h"
 #include "GizmoArrowComponent.h"
 #include "Define.h"
 #include "GizmoCircleComponent.h"
@@ -7,7 +7,7 @@
 #include "World.h"
 #include "Engine/FLoaderOBJ.h"
 
-UTransformGizmo::UTransformGizmo()
+AGizmoActor::AGizmoActor()
 {
     FManagerOBJ::CreateStaticMesh("Assets/gizmo_loc_x.obj");
     FManagerOBJ::CreateStaticMesh("Assets/gizmo_loc_y.obj");
@@ -78,7 +78,7 @@ UTransformGizmo::UTransformGizmo()
     CircleArr.Add(CircleZ);
 }
 
-void UTransformGizmo::Tick(float DeltaTime)
+void AGizmoActor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
