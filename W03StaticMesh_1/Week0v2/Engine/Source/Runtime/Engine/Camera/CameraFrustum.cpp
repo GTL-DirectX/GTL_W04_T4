@@ -1,0 +1,57 @@
+#include "CameraFrustum.h"
+
+#include <cmath>
+#include "Math/JungleMath.h"
+#include "Math/Matrix.h"
+#include "Editor/UnrealEd/EditorViewportClient.h"
+
+void FCameraFrustum::BuildFromView(FEditorViewportClient* ViewportCamera)
+{
+    FMatrix View = ViewportCamera->GetViewMatrix();
+    FMatrix Proj = ViewportCamera->GetProjectionMatrix();
+    FMatrix ViewProj = View * Proj;
+
+
+    // Near
+    Planes[0] = FPlane(ViewProj.M[0][3], ViewProj.M[1][3], ViewProj.M[2][3], ViewProj[3][3]);
+    // Far
+    Planes[1] = FPlane(ViewProj.M[0][3] - ViewProj.M[0][2], ViewProj.M[1][3] - ViewProj.M[1][2], ViewProj.M[2][3] - ViewProj.M[2][2], ViewProj[3][3] - ViewProj[3][2]);
+    // Left
+    Planes[2] = FPlane(ViewProj.M[0][3] + ViewProj.M[0][0], ViewProj.M[1][3] + ViewProj.M[1][0], ViewProj.M[2][3] + ViewProj.M[2][0], ViewProj[3][3] + ViewProj[3][0]);
+    // Right
+    Planes[3] = FPlane(ViewProj.M[0][3] - ViewProj.M[0][0], ViewProj.M[1][3] - ViewProj.M[1][0], ViewProj.M[2][3] - ViewProj.M[2][0], ViewProj[3][3] - ViewProj[3][0]);
+    // Top
+    Planes[4] = FPlane(ViewProj.M[0][3] - ViewProj.M[0][1], ViewProj.M[1][3] - ViewProj.M[1][1], ViewProj.M[2][3] - ViewProj.M[2][1], ViewProj[3][3] - ViewProj[3][1]);
+    // Bottom
+    Planes[5] = FPlane(ViewProj.M[0][3] + ViewProj.M[0][1], ViewProj.M[1][3] + ViewProj.M[1][1], ViewProj.M[2][3] + ViewProj.M[2][1], ViewProj[3][3] + ViewProj[3][1]);
+
+    for (int i = 0; i < 6; i++)
+    {
+        float Len = std::sqrt(Planes[i].A * Planes[i].A + Planes[i].B * Planes[i].B + Planes[i].C * Planes[i].C);
+        if (Len != 0.0f)
+        {
+            Planes[i].A /= Len;
+            Planes[i].B /= Len;
+            Planes[i].C /= Len;
+            Planes[i].D /= Len;
+        }
+    }
+}
+
+bool FCameraFrustum::Intersect(const FBoundingBox& Box) const
+{
+    for (int i = 0; i < 6; ++i)
+    {
+        const FPlane& Plane = Planes[i];
+        FVector PositiveVertex = Box.min;
+        if (Plane.A >= 0)
+            PositiveVertex.x = Box.max.x;
+        if (Plane.B >= 0)
+            PositiveVertex.y = Box.max.y;
+        if (Plane.C >= 0)
+            PositiveVertex.z = Box.max.z;
+        if (Plane.DistanceTo(PositiveVertex) < 0)
+            return false;
+    }
+    return true;
+}
