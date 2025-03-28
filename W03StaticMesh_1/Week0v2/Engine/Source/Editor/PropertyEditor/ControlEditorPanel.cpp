@@ -68,6 +68,9 @@ void ControlEditorPanel::Render()
     // ImGui::PushFont(IconFont);
     // CreateSRTButton(IconSize);
     // ImGui::PopFont();
+
+    CreateOverlay();
+    
     
     ImGui::End();
 }
@@ -239,14 +242,14 @@ void ControlEditorPanel::CreateModifyButton(ImVec2 ButtonSize, ImFont* IconFont)
         ImGui::EndPopup();
     }
 
-    ImGui::SameLine();
-    
-    ImGui::PushFont(IconFont);
-    if (ImGui::Button("\ue9c8", ButtonSize))
-    {
-        ImGui::OpenPopup("PrimitiveControl");
-    }
-    ImGui::PopFont();
+    // ImGui::SameLine();
+    //
+    // ImGui::PushFont(IconFont);
+    // if (ImGui::Button("\ue9c8", ButtonSize))
+    // {
+    //     ImGui::OpenPopup("PrimitiveControl");
+    // }
+    // ImGui::PopFont();
 
     // if (ImGui::BeginPopup("PrimitiveControl"))
     // {
@@ -478,6 +481,31 @@ void ControlEditorPanel::CreateSRTButton(ImVec2 ButtonSize) const
     }
 }
 
+void ControlEditorPanel::CreateOverlay() const
+{
+    ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav;
+
+    const float PAD = 10.0f;
+    const ImGuiViewport* viewport = ImGui::GetMainViewport();
+    ImVec2 work_pos = viewport->WorkPos; // Use work area to avoid menu-bar/task-bar, if any!
+    ImVec2 work_size = viewport->WorkSize;
+    ImVec2 window_pos, window_pos_pivot;
+    window_pos.x = work_pos.x + work_size.x - PAD;
+    window_pos.y = work_pos.y + PAD;
+    window_pos_pivot.x = 1.0f;
+    window_pos_pivot.y = 0.0f;
+    ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
+    window_flags |= ImGuiWindowFlags_NoMove;
+
+    ImGui::SetNextWindowBgAlpha(0.35f); // Transparent background
+        
+    if (ImGui::Begin("Simple overlay", nullptr, window_flags))
+    {
+        ImGui::Text("FPS: 999ms\n" "Picking MS: 999ms");
+    }
+    ImGui::End();
+}
+
 uint64 ControlEditorPanel::ConvertSelectionToFlags(const bool selected[]) const
 {
     uint64 flags = static_cast<uint64>(EEngineShowFlags::None);
@@ -492,6 +520,9 @@ uint64 ControlEditorPanel::ConvertSelectionToFlags(const bool selected[]) const
         flags |= static_cast<uint64>(EEngineShowFlags::SF_UUIDText);
     return flags;
 }
+
+
+
 
 
 void ControlEditorPanel::OnResize(HWND hWnd)

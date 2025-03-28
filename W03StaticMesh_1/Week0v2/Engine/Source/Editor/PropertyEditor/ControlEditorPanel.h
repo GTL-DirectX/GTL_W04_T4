@@ -14,6 +14,7 @@ private:
     void CreateModifyButton(ImVec2 ButtonSize, ImFont* IconFont);
     void CreateFlagButton() const;
     void CreateSRTButton(ImVec2 ButtonSize) const;
+    void CreateOverlay() const;
 
     uint64 ConvertSelectionToFlags(const bool selected[]) const;
     
@@ -25,4 +26,5 @@ private:
     float CameraSpeed = 0.0f;
     float GridScale = 1.0f;
 };
+
 
