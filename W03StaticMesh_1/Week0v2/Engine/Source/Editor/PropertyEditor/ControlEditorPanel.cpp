@@ -1,4 +1,4 @@
-﻿#include "ControlEditorPanel.h"
+#include "ControlEditorPanel.h"
 
 #include "World.h"
 #include "Actors/Player.h"
@@ -14,6 +14,7 @@
 #include "tinyfiledialogs/tinyfiledialogs.h"
 #include "UnrealEd/EditorViewportClient.h"
 #include "PropertyEditor/ShowFlags.h"
+#include "Windows/FThreadStats.h"
 
 void ControlEditorPanel::Render()
 {
@@ -67,8 +68,9 @@ void ControlEditorPanel::Render()
     ImGui::PushFont(IconFont);
     CreateSRTButton(IconSize);
     ImGui::PopFont();
-    
     ImGui::End();
+
+    CreatePerformanceOverlay();
 }
 
 void ControlEditorPanel::CreateMenuButton(ImVec2 ButtonSize, ImFont* IconFont)
@@ -483,11 +485,41 @@ uint64 ControlEditorPanel::ConvertSelectionToFlags(const bool selected[]) const
     return flags;
 }
 
-
 void ControlEditorPanel::OnResize(HWND hWnd)
 {
     RECT clientRect;
     GetClientRect(hWnd, &clientRect);
     Width = clientRect.right - clientRect.left;
     Height = clientRect.bottom - clientRect.top;
+}
+
+void ControlEditorPanel::CreatePerformanceOverlay()
+{
+    float fps;
+    int frameMs;
+    double pickingTime;
+    int numAttempts;
+    double accumulatedTime;
+    FThreadStats::GetStats(fps, frameMs, pickingTime, numAttempts, accumulatedTime);
+    
+    ImGui::SetNextWindowBgAlpha(0.0f);
+    ImGui::SetNextWindowPos(ImVec2(10, 50));
+
+    if (ImGui::Begin("TextOnly", NULL,
+        ImGuiWindowFlags_NoTitleBar |
+        ImGuiWindowFlags_NoResize |
+        ImGuiWindowFlags_AlwaysAutoResize |
+        ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoScrollbar |
+        ImGuiWindowFlags_NoInputs |
+        ImGuiWindowFlags_NoBackground))
+    {
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(57.0f / 255.0f, 255.0f / 255.0f, 20.0f / 255.0f, 1.0f));
+        ImGui::Text("FPS : %.2f (%d ms)", fps, frameMs);
+        ImGui::Text("Picking Time : %.2f ms", pickingTime);
+        ImGui::Text("Num Attempts : %d", numAttempts);
+        ImGui::Text("Accumulated Time : %.2f ms", accumulatedTime);
+        ImGui::PopStyleColor();
+        ImGui::End();
+    }
 }

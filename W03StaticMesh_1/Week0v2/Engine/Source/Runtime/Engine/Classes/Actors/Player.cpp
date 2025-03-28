@@ -1,4 +1,4 @@
-﻿#include "Player.h"
+#include "Player.h"
 
 #include "UnrealClient.h"
 #include "World.h"
@@ -14,6 +14,7 @@
 #include "PropertyEditor/ShowFlags.h"
 #include "UnrealEd/EditorViewportClient.h"
 #include "UObject/UObjectIterator.h"
+#include "Windows/FWindowsPlatformTime.h"
 
 
 using namespace DirectX;
@@ -37,6 +38,9 @@ void AEditorPlayer::Input()
         if (!bLeftMouseDown)
         {
             bLeftMouseDown = true;
+            
+            // RAII Timer 시작
+            FScopeCycleCounter pickingTimer{ TStatId() };
 
             POINT mousePos;
             GetCursorPos(&mousePos);
@@ -58,6 +62,7 @@ void AEditorPlayer::Input()
             ScreenToViewSpace(mousePos.x, mousePos.y, ActiveViewport->GetViewMatrix(), ActiveViewport->GetProjectionMatrix(), pickPosition);
             bool res = PickGizmo(pickPosition);
             if (!res) PickActor(pickPosition);
+
         }
         else
         {
@@ -68,7 +73,7 @@ void AEditorPlayer::Input()
     {
         if (bLeftMouseDown)
         {
-            bLeftMouseDown = false; // ���콺 ������ ��ư�� ���� ���� �ʱ�ȭ
+            bLeftMouseDown = false; 
             GetWorld()->SetPickingGizmo(nullptr);
         }
     }
