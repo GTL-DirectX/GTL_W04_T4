@@ -19,7 +19,10 @@
 
 # Assets 폴더 아래의 .obj 파일은 다시 포함
 !Assets/**/*.obj
+!Data/**/*.obj
+!Data/*.obj
 
+*.ini
 
 # Precompiled Headers
 *.gch

@@ -5,7 +5,7 @@
 #include "BaseGizmos/GizmoArrowComponent.h"
 #include "BaseGizmos/GizmoCircleComponent.h"
 #include "BaseGizmos/GizmoRectangleComponent.h"
-#include "BaseGizmos/TransformGizmo.h"
+#include "BaseGizmos/GizmoActor.h"
 #include "Camera/CameraComponent.h"
 #include "Components/LightComponent.h"
 #include "LevelEditor/SLevelEditor.h"
@@ -398,19 +398,19 @@ void AEditorPlayer::ControlRotation(USceneComponent* pObj, UGizmoBaseComponent* 
         float rotationAmount = (cameraUp.z >= 0 ? -1.0f : 1.0f) * deltaY * 0.01f;
         rotationAmount = rotationAmount + (cameraRight.x >= 0 ? 1.0f : -1.0f) * deltaX * 0.01f;
 
-        rotationDelta = FQuat(FVector(1.0f, 0.0f, 0.0f), rotationAmount); // ���� X �� ���� ȸ��
+        rotationDelta = FQuat(FVector(1.0f, 0.0f, 0.0f), rotationAmount);
     }
     else if (Gizmo->GetGizmoType() == UGizmoBaseComponent::CircleY)
     {
         float rotationAmount = (cameraRight.x >= 0 ? 1.0f : -1.0f) * deltaX * 0.01f;
         rotationAmount = rotationAmount + (cameraUp.z >= 0 ? 1.0f : -1.0f) * deltaY * 0.01f;
 
-        rotationDelta = FQuat(FVector(0.0f, 1.0f, 0.0f), rotationAmount); // ���� Y �� ���� ȸ��
+        rotationDelta = FQuat(FVector(0.0f, 1.0f, 0.0f), rotationAmount);
     }
     else if (Gizmo->GetGizmoType() == UGizmoBaseComponent::CircleZ)
     {
         float rotationAmount = (cameraForward.x <= 0 ? -1.0f : 1.0f) * deltaX * 0.01f;
-        rotationDelta = FQuat(FVector(0.0f, 0.0f, 1.0f), rotationAmount); // ���� Z �� ���� ȸ��
+        rotationDelta = FQuat(FVector(0.0f, 0.0f, 1.0f), rotationAmount);
     }
     if (cdMode == CDM_LOCAL)
     {

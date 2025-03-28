@@ -1,7 +1,7 @@
 #include "Engine/Source/Runtime/Engine/World.h"
 
 #include "Actors/Player.h"
-#include "BaseGizmos/TransformGizmo.h"
+#include "BaseGizmos/GizmoActor.h"
 #include "Camera/CameraComponent.h"
 #include "LevelEditor/SLevelEditor.h"
 #include "Engine/FLoaderOBJ.h"
@@ -12,9 +12,7 @@
 
 void UWorld::Initialize()
 {
-    // TODO: Load Scene
     CreateBaseObject();
-    FManagerOBJ::CreateStaticMesh("Assets/Dodge/Dodge.obj");
 }
 
 void UWorld::CreateBaseObject()
@@ -33,7 +31,7 @@ void UWorld::CreateBaseObject()
 
     if (LocalGizmo == nullptr)
     {
-        LocalGizmo = FObjectFactory::ConstructObject<UTransformGizmo>();
+        LocalGizmo = FObjectFactory::ConstructObject<AGizmoActor>();
     }
 }
 
@@ -41,25 +39,19 @@ void UWorld::ReleaseBaseObject()
 {
     if (LocalGizmo)
     {
-        delete LocalGizmo;
+        DestroyActor(LocalGizmo);
         LocalGizmo = nullptr;
     }
-
-    if (worldGizmo)
-    {
-        delete worldGizmo;
-        worldGizmo = nullptr;
-    }
-
+    
     if (camera)
     {
-        delete camera;
+        GUObjectArray.MarkRemoveObject(camera);
         camera = nullptr;
     }
 
     if (EditorPlayer)
     {
-        delete EditorPlayer;
+        GUObjectArray.MarkRemoveObject(EditorPlayer);
         EditorPlayer = nullptr;
     }
 
@@ -67,7 +59,7 @@ void UWorld::ReleaseBaseObject()
 
 void UWorld::Tick(float DeltaTime)
 {
-	camera->TickComponent(DeltaTime);
+	// camera->TickComponent(DeltaTime);
 	EditorPlayer->Tick(DeltaTime);
 	LocalGizmo->Tick(DeltaTime);
 

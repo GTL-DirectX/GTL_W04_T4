@@ -15,6 +15,7 @@
 #include "UnrealEd/EditorViewportClient.h"
 #include "PropertyEditor/ShowFlags.h"
 #include "Windows/FThreadStats.h"
+#include "UnrealEd/SceneMgr.h"
 
 void ControlEditorPanel::Render()
 {
@@ -65,9 +66,10 @@ void ControlEditorPanel::Render()
     /* Move Cursor X Position */
     ImGui::SetCursorPosX(ContentWidth - (IconSize.x * 3.0f + 16.0f));
     
-    ImGui::PushFont(IconFont);
-    CreateSRTButton(IconSize);
-    ImGui::PopFont();
+    // ImGui::PushFont(IconFont);
+    // CreateSRTButton(IconSize);
+    // ImGui::PopFont();
+
     ImGui::End();
 
     CreatePerformanceOverlay();
@@ -92,6 +94,7 @@ void ControlEditorPanel::CreateMenuButton(ImVec2 ButtonSize, ImFont* IconFont)
         if (ImGui::MenuItem("New Scene"))
         {
             // TODO: New Scene
+            GEngineLoop.CreateNewWorld();
         }
 
         if (ImGui::MenuItem("Load Scene"))
@@ -107,48 +110,57 @@ void ControlEditorPanel::CreateMenuButton(ImVec2 ButtonSize, ImFont* IconFont)
             }
 
             // TODO: Load Scene
-        }
-
-        ImGui::Separator();
-        
-        if (ImGui::MenuItem("Save Scene"))
-        {
-            char const * lFilterPatterns[1]={"*.scene"};
-            const char* FileName =  tinyfd_saveFileDialog("Save Scene File", "", 1, lFilterPatterns,"Scene(.scene) file");
-
-            if (FileName == nullptr)
+            FString SceneFromJson = FSceneMgr::LoadSceneFromFile(FileName);
+            if (!FSceneMgr::ParseSceneData(SceneFromJson))
             {
+                tinyfd_messageBox("Error", "파일을 불러올 수 없습니다.", "ok", "error", 1);
                 ImGui::End();
                 return;
             }
-
-            // TODO: Save Scene
-
-            tinyfd_messageBox("알림", "저장되었습니다.", "ok", "info", 1);
-        }
-
-        ImGui::Separator();
-        
-        if (ImGui::BeginMenu("Import"))
-        {
-            if (ImGui::MenuItem("Wavefront (.obj)"))
-            {
-                char const * lFilterPatterns[1]={"*.obj"};
-                const char* FileName =  tinyfd_openFileDialog("Open OBJ File", "", 1, lFilterPatterns,"Wavefront(.obj) file", 0);
-
-                if (FileName != nullptr)
-                {
-                    std::cout << FileName << std::endl;
-
-                    if (FManagerOBJ::CreateStaticMesh(FileName) == nullptr)
-                    {
-                        tinyfd_messageBox("Error", "파일을 불러올 수 없습니다.", "ok", "error", 1);
-                    }
-                }
-            }
             
-            ImGui::EndMenu();
+            bOpenMenu = false;
         }
+
+        // ImGui::Separator();
+        
+        // if (ImGui::MenuItem("Save Scene"))
+        // {
+        //     char const * lFilterPatterns[1]={"*.scene"};
+        //     const char* FileName =  tinyfd_saveFileDialog("Save Scene File", "", 1, lFilterPatterns,"Scene(.scene) file");
+        //
+        //     if (FileName == nullptr)
+        //     {
+        //         ImGui::End();
+        //         return;
+        //     }
+        //
+        //     // TODO: Save Scene
+        //
+        //     tinyfd_messageBox("알림", "저장되었습니다.", "ok", "info", 1);
+        // }
+        //
+        // ImGui::Separator();
+        
+        // if (ImGui::BeginMenu("Import"))
+        // {
+        //     if (ImGui::MenuItem("Wavefront (.obj)"))
+        //     {
+        //         char const * lFilterPatterns[1]={"*.obj"};
+        //         const char* FileName =  tinyfd_openFileDialog("Open OBJ File", "", 1, lFilterPatterns,"Wavefront(.obj) file", 0);
+        //
+        //         if (FileName != nullptr)
+        //         {
+        //             std::cout << FileName << std::endl;
+        //
+        //             if (FManagerOBJ::CreateStaticMesh(FileName) == nullptr)
+        //             {
+        //                 tinyfd_messageBox("Error", "파일을 불러올 수 없습니다.", "ok", "error", 1);
+        //             }
+        //         }
+        //     }
+        //     
+        //     ImGui::EndMenu();
+        // }
 
         ImGui::Separator();
 
@@ -246,7 +258,7 @@ void ControlEditorPanel::CreateModifyButton(ImVec2 ButtonSize, ImFont* IconFont)
             const char* label;
             int obj;
         };
-
+    
         static const Primitive primitives[] = {
             { .label= "Cube",      .obj= OBJ_CUBE },
             { .label= "Sphere",    .obj= OBJ_SPHERE },
@@ -254,7 +266,7 @@ void ControlEditorPanel::CreateModifyButton(ImVec2 ButtonSize, ImFont* IconFont)
             { .label= "Particle",  .obj= OBJ_PARTICLE },
             { .label= "Text",      .obj= OBJ_Text }
         };
-
+    
         for (const auto& primitive : primitives)
         {
             if (ImGui::Selectable(primitive.label))

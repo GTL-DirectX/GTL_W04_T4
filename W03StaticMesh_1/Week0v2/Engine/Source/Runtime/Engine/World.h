@@ -11,7 +11,7 @@ class UGizmoArrowComponent;
 class UCameraComponent;
 class AEditorPlayer;
 class USceneComponent;
-class UTransformGizmo;
+class AGizmoActor;
 
 
 class UWorld : public UObject
@@ -55,11 +55,9 @@ private:
     AEditorPlayer* EditorPlayer = nullptr;
 
 public:
-    UObject* worldGizmo = nullptr;
-
     const TSet<AActor*>& GetActors() const { return ActorsArray; }
 
-    UTransformGizmo* LocalGizmo = nullptr;
+    AGizmoActor* LocalGizmo = nullptr;
     UCameraComponent* GetCamera() const { return camera; }
     AEditorPlayer* GetEditorPlayer() const { return EditorPlayer; }
 
@@ -70,8 +68,7 @@ public:
     {
         SelectedActor = InActor;
     }
-
-    UObject* GetWorldGizmo() const { return worldGizmo; }
+    
     USceneComponent* GetPickingGizmo() const { return pickingGizmo; }
     void SetPickingGizmo(UObject* Object);
 };
