@@ -1021,6 +1021,11 @@ void FRenderer::Render(UWorld* World, std::shared_ptr<FEditorViewportClient> Act
 
 void FRenderer::RenderStaticMeshes(UWorld* World, std::shared_ptr<FEditorViewportClient> ActiveViewport)
 {
+    // Frustum Culling
+    FrustumCulling(ActiveViewport);
+    // Distance Culling
+    // Occlusion Culling
+    // Material Sorting
     PrepareShader();
     for (UStaticMeshComponent* StaticMeshComp : StaticMeshObjs)
     {
@@ -1174,6 +1179,25 @@ void FRenderer::RenderBillboards(UWorld* World, std::shared_ptr<FEditorViewportC
         }
     }
     PrepareShader();
+}
+
+void FRenderer::FrustumCulling(std::shared_ptr<FEditorViewportClient> ActiveViewport)
+{
+    TArray<UStaticMeshComponent*> NewStaticMeshObjs;
+
+    for (auto StaticMesh : StaticMeshObjs)
+    {
+        if (!StaticMesh)
+            continue;
+
+        if (ActiveViewport->GetCameraFrustum().Intersect(StaticMesh->GetBoundingBox()))
+        {
+            NewStaticMeshObjs.Add(StaticMesh);
+        }
+    }
+
+    StaticMeshObjs.Empty();
+    StaticMeshObjs = NewStaticMeshObjs;
 }
 
 void FRenderer::RenderLight(UWorld* World, std::shared_ptr<FEditorViewportClient> ActiveViewport)

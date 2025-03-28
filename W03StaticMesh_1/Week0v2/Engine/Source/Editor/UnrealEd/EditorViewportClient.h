@@ -7,13 +7,12 @@
 #include "ViewportClient.h"
 #include "EngineLoop.h"
 #include "EngineBaseTypes.h"
+#include "Camera/CameraFrustum.h"
 
 #define MIN_ORTHOZOOM				1.0							/* 2D ortho viewport zoom >= MIN_ORTHOZOOM */
 #define MAX_ORTHOZOOM				1e25	
 
 extern FEngineLoop GEngineLoop;
-
-
 
 struct FViewportCameraTransform
 {
@@ -131,6 +130,9 @@ public:
     uint64 ShowFlag;
     EViewModeIndex ViewMode;
 
+    // Culling에 사용할 카메라 절두체 정보.
+    FCameraFrustum CameraFrustum;
+
     FMatrix View;
     FMatrix Projection;
 public: //Camera Movement
@@ -160,6 +162,11 @@ public: //Camera Movement
 
     //Flag Test Code
     static void SetOthoSize(float _Value);
+
+    void UpdateCameraFrustum();
+
+    const FCameraFrustum& GetCameraFrustum() const { return CameraFrustum; }
+
 private: // Input
     POINT lastMousePos;
     bool bRightMouseDown = false;
