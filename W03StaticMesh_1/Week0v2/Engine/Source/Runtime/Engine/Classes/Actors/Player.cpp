@@ -1,11 +1,11 @@
-﻿#include "Player.h"
+#include "Player.h"
 
 #include "UnrealClient.h"
 #include "World.h"
 #include "BaseGizmos/GizmoArrowComponent.h"
 #include "BaseGizmos/GizmoCircleComponent.h"
 #include "BaseGizmos/GizmoRectangleComponent.h"
-#include "BaseGizmos/TransformGizmo.h"
+#include "BaseGizmos/GizmoActor.h"
 #include "Camera/CameraComponent.h"
 #include "Components/LightComponent.h"
 #include "LevelEditor/SLevelEditor.h"
@@ -14,6 +14,7 @@
 #include "PropertyEditor/ShowFlags.h"
 #include "UnrealEd/EditorViewportClient.h"
 #include "UObject/UObjectIterator.h"
+#include "Windows/FWindowsPlatformTime.h"
 
 
 using namespace DirectX;
@@ -37,6 +38,9 @@ void AEditorPlayer::Input()
         if (!bLeftMouseDown)
         {
             bLeftMouseDown = true;
+            
+            // RAII Timer 시작
+            FScopeCycleCounter pickingTimer{ TStatId() };
 
             POINT mousePos;
             GetCursorPos(&mousePos);
@@ -58,6 +62,7 @@ void AEditorPlayer::Input()
             ScreenToViewSpace(mousePos.x, mousePos.y, ActiveViewport->GetViewMatrix(), ActiveViewport->GetProjectionMatrix(), pickPosition);
             bool res = PickGizmo(pickPosition);
             if (!res) PickActor(pickPosition);
+
         }
         else
         {
@@ -68,7 +73,7 @@ void AEditorPlayer::Input()
     {
         if (bLeftMouseDown)
         {
-            bLeftMouseDown = false; // ���콺 ������ ��ư�� ���� ���� �ʱ�ȭ
+            bLeftMouseDown = false; 
             GetWorld()->SetPickingGizmo(nullptr);
         }
     }
@@ -393,19 +398,19 @@ void AEditorPlayer::ControlRotation(USceneComponent* pObj, UGizmoBaseComponent* 
         float rotationAmount = (cameraUp.z >= 0 ? -1.0f : 1.0f) * deltaY * 0.01f;
         rotationAmount = rotationAmount + (cameraRight.x >= 0 ? 1.0f : -1.0f) * deltaX * 0.01f;
 
-        rotationDelta = FQuat(FVector(1.0f, 0.0f, 0.0f), rotationAmount); // ���� X �� ���� ȸ��
+        rotationDelta = FQuat(FVector(1.0f, 0.0f, 0.0f), rotationAmount);
     }
     else if (Gizmo->GetGizmoType() == UGizmoBaseComponent::CircleY)
     {
         float rotationAmount = (cameraRight.x >= 0 ? 1.0f : -1.0f) * deltaX * 0.01f;
         rotationAmount = rotationAmount + (cameraUp.z >= 0 ? 1.0f : -1.0f) * deltaY * 0.01f;
 
-        rotationDelta = FQuat(FVector(0.0f, 1.0f, 0.0f), rotationAmount); // ���� Y �� ���� ȸ��
+        rotationDelta = FQuat(FVector(0.0f, 1.0f, 0.0f), rotationAmount);
     }
     else if (Gizmo->GetGizmoType() == UGizmoBaseComponent::CircleZ)
     {
         float rotationAmount = (cameraForward.x <= 0 ? -1.0f : 1.0f) * deltaX * 0.01f;
-        rotationDelta = FQuat(FVector(0.0f, 0.0f, 1.0f), rotationAmount); // ���� Z �� ���� ȸ��
+        rotationDelta = FQuat(FVector(0.0f, 0.0f, 1.0f), rotationAmount);
     }
     if (cdMode == CDM_LOCAL)
     {

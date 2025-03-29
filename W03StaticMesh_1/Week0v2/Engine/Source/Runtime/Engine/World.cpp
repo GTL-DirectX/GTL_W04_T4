@@ -1,7 +1,7 @@
 #include "Engine/Source/Runtime/Engine/World.h"
 
 #include "Actors/Player.h"
-#include "BaseGizmos/TransformGizmo.h"
+#include "BaseGizmos/GizmoActor.h"
 #include "Camera/CameraComponent.h"
 #include "LevelEditor/SLevelEditor.h"
 #include "Engine/FLoaderOBJ.h"
@@ -12,16 +12,7 @@
 
 void UWorld::Initialize()
 {
-    // TODO: Load Scene
     CreateBaseObject();
-    //SpawnObject(OBJ_CUBE);
-    FManagerOBJ::CreateStaticMesh("Assets/Dodge/Dodge.obj");
-
-    FManagerOBJ::CreateStaticMesh("Assets/SkySphere.obj");
-    AActor* SpawnedActor = SpawnActor<AActor>();
-    USkySphereComponent* skySphere = SpawnedActor->AddComponent<USkySphereComponent>();
-    skySphere->SetStaticMesh(FManagerOBJ::GetStaticMesh(L"SkySphere.obj"));
-    skySphere->GetStaticMesh()->GetMaterials()[0]->Material->SetDiffuse(FVector((float)32/255, (float)171/255, (float)191/255));
 }
 
 void UWorld::CreateBaseObject()
@@ -40,7 +31,7 @@ void UWorld::CreateBaseObject()
 
     if (LocalGizmo == nullptr)
     {
-        LocalGizmo = FObjectFactory::ConstructObject<UTransformGizmo>();
+        LocalGizmo = FObjectFactory::ConstructObject<AGizmoActor>();
     }
 }
 
@@ -48,25 +39,19 @@ void UWorld::ReleaseBaseObject()
 {
     if (LocalGizmo)
     {
-        delete LocalGizmo;
+        DestroyActor(LocalGizmo);
         LocalGizmo = nullptr;
     }
-
-    if (worldGizmo)
-    {
-        delete worldGizmo;
-        worldGizmo = nullptr;
-    }
-
+    
     if (camera)
     {
-        delete camera;
+        GUObjectArray.MarkRemoveObject(camera);
         camera = nullptr;
     }
 
     if (EditorPlayer)
     {
-        delete EditorPlayer;
+        GUObjectArray.MarkRemoveObject(EditorPlayer);
         EditorPlayer = nullptr;
     }
 
@@ -74,7 +59,7 @@ void UWorld::ReleaseBaseObject()
 
 void UWorld::Tick(float DeltaTime)
 {
-	camera->TickComponent(DeltaTime);
+	// camera->TickComponent(DeltaTime);
 	EditorPlayer->Tick(DeltaTime);
 	LocalGizmo->Tick(DeltaTime);
 

@@ -10,11 +10,11 @@ void UnrealEd::Initialize()
     auto ControlPanel = std::make_shared<ControlEditorPanel>();
     Panels["ControlPanel"] = ControlPanel;
     
-    auto OutlinerPanel = std::make_shared<OutlinerEditorPanel>();
-    Panels["OutlinerPanel"] = OutlinerPanel;
-    
-    auto PropertyPanel = std::make_shared<PropertyEditorPanel>();
-    Panels["PropertyPanel"] = PropertyPanel;
+    // auto OutlinerPanel = std::make_shared<OutlinerEditorPanel>();
+    // Panels["OutlinerPanel"] = OutlinerPanel;
+    //
+    // auto PropertyPanel = std::make_shared<PropertyEditorPanel>();
+    // Panels["PropertyPanel"] = PropertyPanel;
 }
 
 void UnrealEd::Render() const

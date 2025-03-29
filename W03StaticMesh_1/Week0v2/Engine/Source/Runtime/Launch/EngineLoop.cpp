@@ -8,6 +8,7 @@
 #include "UnrealClient.h"
 #include "slate/Widgets/Layout/SSplitter.h"
 #include "LevelEditor/SLevelEditor.h"
+#include "Windows/FThreadStats.h"
 
 
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -124,8 +125,7 @@ int32 FEngineLoop::Init(HINSTANCE hInstance)
     LevelEditor = new SLevelEditor();
     LevelEditor->Initialize();
 
-    GWorld = new UWorld;
-    GWorld->Initialize();
+    CreateNewWorld();
 
     return 0;
 }
@@ -194,7 +194,8 @@ void FEngineLoop::Tick()
         Input();
         GWorld->Tick(elapsedTime);
         LevelEditor->Tick(elapsedTime);
-        Render();
+        if (GWorld)
+            Render();
         UIMgr->BeginFrame();
         UnrealEditor->Render();
 
@@ -213,6 +214,10 @@ void FEngineLoop::Tick()
             elapsedTime = (endTime.QuadPart - startTime.QuadPart) * 1000.0 / frequency.QuadPart;
         }
         while (elapsedTime < targetFrameTime);
+
+        float fps = static_cast<float>(1000.0 / elapsedTime);
+        int frameMs = static_cast<int>(elapsedTime);
+        FThreadStats::SetFPS(fps, frameMs);
     }
 }
 
@@ -242,6 +247,18 @@ void FEngineLoop::Input()
     {
         bTestInput = false;
     }
+}
+
+void FEngineLoop::CreateNewWorld()
+{
+    if (GWorld)
+    {
+        GWorld->Release();
+        GWorld = nullptr;
+    }
+
+    GWorld = FObjectFactory::ConstructObject<UWorld>();
+    GWorld->Initialize();
 }
 
 void FEngineLoop::Exit()
