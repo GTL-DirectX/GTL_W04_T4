@@ -1,5 +1,6 @@
 #include "PrimitiveBatch.h"
 #include "EngineLoop.h"
+#include "World.h"
 #include "UnrealEd/EditorViewportClient.h"
 extern FEngineLoop GEngineLoop;
 
@@ -166,6 +167,7 @@ void UPrimitiveBatch::RenderAABB(const FBoundingBox& localAABB, const FVector& c
     BoundingBox.min = min;
     BoundingBox.max = max;
     BoundingBoxes.Add(BoundingBox);
+    BoundingBoxes.Add(GEngineLoop.GetWorld()->GetRootOctree()->Region);
 }
 void UPrimitiveBatch::RenderOBB(const FBoundingBox& localAABB, const FVector& center, const FMatrix& modelMatrix)
 {

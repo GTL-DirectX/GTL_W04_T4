@@ -17,13 +17,16 @@ class AEditorPlayer : public AActor
 
     void Input();
     bool PickGizmo(FVector& rayOrigin);
-    void PickActor(const FVector& pickPosition);
+    void PickActor(const FVector& pickPosition, const FVector& PickDirection);
+    void PickActor(const FRay& Ray); // Octree
     void AddControlMode();
     void AddCoordiMode();
 
 private:
     int RayIntersectsObject(const FVector& pickPosition, USceneComponent* obj, float& hitDistance, int& intersectCount);
+    int RayIntersectsObject(const FRay& Ray, USceneComponent* obj, float& hitDistance, int& intersectCount); // Octree
     void ScreenToViewSpace(int screenX, int screenY, const FMatrix& viewMatrix, const FMatrix& projectionMatrix, FVector& rayOrigin);
+    FRay GetMouseRay(int screenX, int screenY); // Octree
     void PickedObjControl();
     void ControlRotation(USceneComponent* pObj, UGizmoBaseComponent* Gizmo, int32 deltaX, int32 deltaY);
     void ControlTranslation(USceneComponent* pObj, UGizmoBaseComponent* Gizmo, int32 deltaX, int32 deltaY);

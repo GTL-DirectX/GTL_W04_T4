@@ -9,6 +9,7 @@
 #include "Engine/StaticMeshActor.h"
 #include "Components/SkySphereComponent.h"
 #include "Math/JungleMath.h"
+#include "UnrealEd/PrimitiveBatch.h"
 
 
 void UWorld::Initialize()
@@ -73,7 +74,6 @@ void UWorld::Tick(float DeltaTime)
     for (AActor* Actor : PendingBeginPlayActors)
     {
         Actor->BeginPlay();
-        RootOctree->PendingInsertion.push(Actor);
     }
     PendingBeginPlayActors.Empty();
 
@@ -82,8 +82,6 @@ void UWorld::Tick(float DeltaTime)
 	{
 	    Actor->Tick(DeltaTime);
 	}
-
-    RootOctree->UpdateTree();
 }
 
 void UWorld::Release()
@@ -155,37 +153,15 @@ void UWorld::ComputeWorldExtents()
         auto Component = Cast<UStaticMeshComponent>(Actor->GetRootComponent());
         if (!Component) continue;
 
-        FBoundingBox BoundingBox = Component->GetBoundingBox();
-
-        FVector LocalAABB[8] = {
-            { BoundingBox.min.x, BoundingBox.min.y, BoundingBox.min.z },
-            { BoundingBox.max.x, BoundingBox.min.y, BoundingBox.min.z },
-            { BoundingBox.min.x, BoundingBox.max.y, BoundingBox.min.z },
-            { BoundingBox.max.x, BoundingBox.max.y, BoundingBox.min.z },
-            { BoundingBox.min.x, BoundingBox.min.y, BoundingBox.max.z },
-            { BoundingBox.max.x, BoundingBox.min.y, BoundingBox.max.z },
-            { BoundingBox.min.x, BoundingBox.max.y, BoundingBox.max.z },
-            { BoundingBox.max.x, BoundingBox.max.y, BoundingBox.max.z }
-        };
+        FBoundingBox BoundingBox = Component->GetWorldSpaceBoundingBox();
         
-        FMatrix Model = JungleMath::CreateModelMatrix(
-            Component->GetWorldLocation(),
-            Component->GetWorldRotation(),
-            Component->GetWorldScale()
-        );
+        WorldMin.x = std::min(WorldMin.x, BoundingBox.min.x);
+        WorldMin.y = std::min(WorldMin.y, BoundingBox.min.y);
+        WorldMin.z = std::min(WorldMin.z, BoundingBox.min.z);
 
-        for (const FVector& AABB : LocalAABB)
-        {
-            FVector WorldCorner = Model.TransformPosition(AABB);
-
-            WorldMin.x = std::min(WorldMin.x, WorldCorner.x);
-            WorldMin.y = std::min(WorldMin.y, WorldCorner.y);
-            WorldMin.z = std::min(WorldMin.z, WorldCorner.z);
-
-            WolrdMax.x = std::max(WolrdMax.x, WorldCorner.x);
-            WolrdMax.y = std::max(WolrdMax.y, WorldCorner.y);
-            WolrdMax.z = std::max(WolrdMax.z, WorldCorner.z);
-        }
+        WolrdMax.x = std::max(WolrdMax.x, BoundingBox.max.x);
+        WolrdMax.y = std::max(WolrdMax.y, BoundingBox.max.y);
+        WolrdMax.z = std::max(WolrdMax.z, BoundingBox.max.z);
     }
 
     RootOctree->Region.min = WorldMin;

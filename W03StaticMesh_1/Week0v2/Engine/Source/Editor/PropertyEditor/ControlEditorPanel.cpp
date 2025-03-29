@@ -120,6 +120,12 @@ void ControlEditorPanel::CreateMenuButton(ImVec2 ButtonSize, ImFont* IconFont)
 
             GEngineLoop.GetWorld()->ComputeWorldExtents();
 
+            for (auto Actor : GEngineLoop.GetWorld()->GetActors().Array())
+            {
+                GEngineLoop.GetWorld()->GetRootOctree()->Insert(Actor);
+            }
+
+            
             bOpenMenu = false;
         }
 

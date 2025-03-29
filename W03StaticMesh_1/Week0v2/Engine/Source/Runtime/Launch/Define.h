@@ -192,7 +192,7 @@ struct FBoundingBox
         return std::max({ diff.x, diff.y, diff.z });
     }
 
-    bool Contains(FBoundingBox Other) const
+    bool Contains(const FBoundingBox Other) const
     {
         return (Other.min.x >= min.x) &&
            (Other.min.y >= min.y) &&
