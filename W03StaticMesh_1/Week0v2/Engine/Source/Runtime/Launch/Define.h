@@ -165,19 +165,48 @@ struct FPoint
 
     float x, y;
 };
+struct FRay
+{
+    FVector Origin;
+    FVector Direction;
+};
 struct FBoundingBox
 {
-    FBoundingBox(){}
-    FBoundingBox(FVector _min, FVector _max) : min(_min), max(_max) {}
+    FBoundingBox() = default;
+    FBoundingBox(FVector _min, FVector _max)
+        : min(_min)
+        , pad(0)
+        , max(_max)
+        , pad1(0)
+    {
+    }
+
 	FVector min; // Minimum extents
 	float pad;
 	FVector max; // Maximum extents
 	float pad1;
-    bool Intersect(const FVector& rayOrigin, const FVector& rayDir, float& outDistance)
+
+    float Size() const
+    {
+        FVector diff = max - min;
+        return std::max({ diff.x, diff.y, diff.z });
+    }
+
+    bool Contains(FBoundingBox Other) const
+    {
+        return (Other.min.x >= min.x) &&
+           (Other.min.y >= min.y) &&
+           (Other.min.z >= min.z) &&
+           (Other.max.x <= max.x) &&
+           (Other.max.y <= max.y) &&
+           (Other.max.z <= max.z);
+    }
+    
+    bool Intersect(const FVector& rayOrigin, const FVector& rayDir, float& outDistance) const
     {
         float tmin = -FLT_MAX;
         float tmax = FLT_MAX;
-        const float epsilon = 1e-6f;
+        constexpr float epsilon = 1e-6f;
 
         // X축 처리
         if (fabs(rayDir.x) < epsilon)

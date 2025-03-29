@@ -8,6 +8,7 @@
 #include "Classes/Components/StaticMeshComponent.h"
 #include "Engine/StaticMeshActor.h"
 #include "Components/SkySphereComponent.h"
+#include "Math/JungleMath.h"
 
 
 void UWorld::Initialize()
@@ -32,6 +33,11 @@ void UWorld::CreateBaseObject()
     if (LocalGizmo == nullptr)
     {
         LocalGizmo = FObjectFactory::ConstructObject<AGizmoActor>();
+    }
+
+    if (RootOctree == nullptr)
+    {
+        RootOctree = new Octree();
     }
 }
 
@@ -67,6 +73,7 @@ void UWorld::Tick(float DeltaTime)
     for (AActor* Actor : PendingBeginPlayActors)
     {
         Actor->BeginPlay();
+        RootOctree->PendingInsertion.push(Actor);
     }
     PendingBeginPlayActors.Empty();
 
@@ -75,6 +82,8 @@ void UWorld::Tick(float DeltaTime)
 	{
 	    Actor->Tick(DeltaTime);
 	}
+
+    RootOctree->UpdateTree();
 }
 
 void UWorld::Release()
@@ -134,4 +143,51 @@ bool UWorld::DestroyActor(AActor* ThisActor)
 void UWorld::SetPickingGizmo(UObject* Object)
 {
 	pickingGizmo = Cast<USceneComponent>(Object);
+}
+
+void UWorld::ComputeWorldExtents()
+{
+    FVector WorldMin = FVector(FLT_MAX, FLT_MAX, FLT_MAX);
+    FVector WolrdMax = FVector(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+
+    for (const auto& Actor : ActorsArray)
+    {
+        auto Component = Cast<UStaticMeshComponent>(Actor->GetRootComponent());
+        if (!Component) continue;
+
+        FBoundingBox BoundingBox = Component->GetBoundingBox();
+
+        FVector LocalAABB[8] = {
+            { BoundingBox.min.x, BoundingBox.min.y, BoundingBox.min.z },
+            { BoundingBox.max.x, BoundingBox.min.y, BoundingBox.min.z },
+            { BoundingBox.min.x, BoundingBox.max.y, BoundingBox.min.z },
+            { BoundingBox.max.x, BoundingBox.max.y, BoundingBox.min.z },
+            { BoundingBox.min.x, BoundingBox.min.y, BoundingBox.max.z },
+            { BoundingBox.max.x, BoundingBox.min.y, BoundingBox.max.z },
+            { BoundingBox.min.x, BoundingBox.max.y, BoundingBox.max.z },
+            { BoundingBox.max.x, BoundingBox.max.y, BoundingBox.max.z }
+        };
+        
+        FMatrix Model = JungleMath::CreateModelMatrix(
+            Component->GetWorldLocation(),
+            Component->GetWorldRotation(),
+            Component->GetWorldScale()
+        );
+
+        for (const FVector& AABB : LocalAABB)
+        {
+            FVector WorldCorner = Model.TransformPosition(AABB);
+
+            WorldMin.x = std::min(WorldMin.x, WorldCorner.x);
+            WorldMin.y = std::min(WorldMin.y, WorldCorner.y);
+            WorldMin.z = std::min(WorldMin.z, WorldCorner.z);
+
+            WolrdMax.x = std::max(WolrdMax.x, WorldCorner.x);
+            WolrdMax.y = std::max(WolrdMax.y, WorldCorner.y);
+            WolrdMax.z = std::max(WolrdMax.z, WorldCorner.z);
+        }
+    }
+
+    RootOctree->Region.min = WorldMin;
+    RootOctree->Region.max = WolrdMax;
 }

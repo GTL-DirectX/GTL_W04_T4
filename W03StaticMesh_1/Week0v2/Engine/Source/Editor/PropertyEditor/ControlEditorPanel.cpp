@@ -117,7 +117,9 @@ void ControlEditorPanel::CreateMenuButton(ImVec2 ButtonSize, ImFont* IconFont)
                 ImGui::End();
                 return;
             }
-            
+
+            GEngineLoop.GetWorld()->ComputeWorldExtents();
+
             bOpenMenu = false;
         }
 

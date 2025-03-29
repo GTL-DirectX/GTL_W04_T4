@@ -1,6 +1,7 @@
 #pragma once
 #include "Define.h"
 #include "Container/Set.h"
+#include "Octree/Octree.h"
 #include "UObject/ObjectFactory.h"
 #include "UObject/ObjectMacros.h"
 
@@ -54,6 +55,7 @@ private:
     UCameraComponent* camera = nullptr;
     AEditorPlayer* EditorPlayer = nullptr;
 
+    Octree* RootOctree = nullptr;
 public:
     const TSet<AActor*>& GetActors() const { return ActorsArray; }
 
@@ -71,6 +73,9 @@ public:
     
     USceneComponent* GetPickingGizmo() const { return pickingGizmo; }
     void SetPickingGizmo(UObject* Object);
+
+    void ComputeWorldExtents();
+    Octree* GetRootOctree() const { return RootOctree; }
 };
 
 
