@@ -146,6 +146,7 @@ public: // line shader
 
 private:
     void FrustumCulling(std::shared_ptr<FEditorViewportClient> ActiveViewport);
+    void OcclusionCulling(std::shared_ptr<FEditorViewportClient> ActiveViewport);
 
 private:
     TArray<UStaticMeshComponent*> StaticMeshObjs;

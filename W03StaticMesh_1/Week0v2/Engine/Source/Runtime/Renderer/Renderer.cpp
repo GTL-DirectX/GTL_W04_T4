@@ -1185,20 +1185,20 @@ void FRenderer::FrustumCulling(std::shared_ptr<FEditorViewportClient> ActiveView
 {
     TArray<UStaticMeshComponent*> NewStaticMeshObjs;
 
-    for (auto StaticMesh : StaticMeshObjs)
+    for (UStaticMeshComponent* StaticMesh : StaticMeshObjs)
     {
         if (!StaticMesh)
             continue;
 
-        if (ActiveViewport->GetCameraFrustum().Intersect(StaticMesh->GetBoundingBox()))
+        if (ActiveViewport->GetCameraFrustum().IntersectMesh(StaticMesh->GetWorldSpaceBoundingBox()))
         {
-            NewStaticMeshObjs.Add(StaticMesh);
+            NewStaticMeshObjs.Emplace(StaticMesh);
         }
     }
-
-    StaticMeshObjs.Empty();
+    //UE_LOG(LogLevel::Display, "FrustumCulling : %d -> %d", StaticMeshObjs.Num(), NewStaticMeshObjs.Num());
     StaticMeshObjs = NewStaticMeshObjs;
 }
+
 
 void FRenderer::RenderLight(UWorld* World, std::shared_ptr<FEditorViewportClient> ActiveViewport)
 {
