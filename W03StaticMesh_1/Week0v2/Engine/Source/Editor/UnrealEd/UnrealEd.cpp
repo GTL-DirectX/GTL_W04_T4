@@ -1,4 +1,4 @@
-#include "UnrealEd.h"
+﻿#include "UnrealEd.h"
 #include "EditorPanel.h"
 
 #include "PropertyEditor/ControlEditorPanel.h"
@@ -10,8 +10,8 @@ void UnrealEd::Initialize()
     auto ControlPanel = std::make_shared<ControlEditorPanel>();
     Panels["ControlPanel"] = ControlPanel;
     
-     //auto OutlinerPanel = std::make_shared<OutlinerEditorPanel>();
-     //Panels["OutlinerPanel"] = OutlinerPanel;
+    // auto OutlinerPanel = std::make_shared<OutlinerEditorPanel>();
+    // Panels["OutlinerPanel"] = OutlinerPanel;
     //
     // auto PropertyPanel = std::make_shared<PropertyEditorPanel>();
     // Panels["PropertyPanel"] = PropertyPanel;

@@ -40,7 +40,6 @@ void FEditorViewportClient::Tick(float DeltaTime)
     Input();
     UpdateViewMatrix();
     UpdateProjectionMatrix();
-    UpdateCameraFrustum();
 
 }
 
@@ -372,11 +371,6 @@ void FEditorViewportClient::SetOthoSize(float _Value)
     if (orthoSize <= 0.1f)
         orthoSize = 0.1f;
     
-}
-
-void FEditorViewportClient::UpdateCameraFrustum()
-{
-    CameraFrustum.BuildFromView(this);
 }
 
 void FEditorViewportClient::LoadConfig(const TMap<FString, FString>& config)
