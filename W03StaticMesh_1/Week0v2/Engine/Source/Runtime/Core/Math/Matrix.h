@@ -2,7 +2,8 @@
 
 #include <DirectXMath.h>
 
-//#define SIMD
+#define SIMD 0
+#define AVX 0
 
 // 4x4 행렬 연산
 union FMatrix
@@ -10,6 +11,8 @@ union FMatrix
 	float M[4][4];
 #ifdef SIMD
     __m128 Row[4];
+#elif AVX
+    __m256 Row256[2];   // TODO: M의 주소를 'reinterpret_cast<const float*>(Mat.M) + 8' 의 형태로 사용하면 필요 없음, __m128 Row[4] 또한 마찬가지
 #endif
 	static const FMatrix Identity;
 	// 기본 연산자 오버로딩

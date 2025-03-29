@@ -1,5 +1,6 @@
 #include "Define.h"
-//#define SIMD
+#define SIMD 0
+#define AVX 0
 
 // 단위 행렬 정의
 const FMatrix FMatrix::Identity = { {
@@ -14,7 +15,7 @@ FMatrix FMatrix::operator+(const FMatrix& Other) const {
     FMatrix Result;
     for (int32 i = 0; i < 4; i++)
     {
-#ifdef SIMD
+#if SIMD
         Result.Row[i] = _mm_add_ps(Row[i], Other.Row[i]);
 #else
         for (int32 j = 0; j < 4; j++)
@@ -29,7 +30,7 @@ FMatrix FMatrix::operator-(const FMatrix& Other) const {
     FMatrix Result;
     for (int32 i = 0; i < 4; i++)
     {
-#ifdef SIMD
+#if SIMD
         Result.Row[i] = _mm_sub_ps(Row[i], Other.Row[i]);
 #else
         for (int32 j = 0; j < 4; j++)
@@ -44,7 +45,7 @@ FMatrix FMatrix::operator*(const FMatrix& Other) const {
     FMatrix Result = {};
     for (int32 i = 0; i < 4; i++)
     {
-#ifdef SIMD
+#if SIMD
         Result.Row[i] = MulVecMat(Row[i], Other);
 #else
         for (int32 j = 0; j < 4; j++)
@@ -79,7 +80,7 @@ FMatrix FMatrix::operator*(const FMatrix& Other) const {
     //return R;
 }
 
-#ifdef SIMD
+#if SIMD
 // 벡터 곱셈
 __m128 FMatrix::MulVecMat(const __m128& Vector, const FMatrix& Matrix) const
 {
@@ -102,7 +103,7 @@ FMatrix FMatrix::operator*(float Scalar) const {
     FMatrix Result;
     for (int32 i = 0; i < 4; i++)
     {
-#ifdef SIMD
+#if SIMD
         Result.Row[i] = _mm_mul_ps(Row[i], _mm_set1_ps(Scalar));
 #else
         for (int32 j = 0; j < 4; j++)
@@ -118,7 +119,7 @@ FMatrix FMatrix::operator/(float Scalar) const {
     FMatrix Result;
     for (int32 i = 0; i < 4; i++)
     {
-#ifdef SIMD
+#if SIMD
         Result.Row[i] = _mm_div_ps(Row[i], _mm_set1_ps(Scalar));
 #else
         for (int32 j = 0; j < 4; j++)
@@ -140,7 +141,7 @@ const float* FMatrix::operator[](int Row) const
 // 전치 행렬
 FMatrix FMatrix::Transpose(const FMatrix& Mat) {
     FMatrix Result;
-#ifdef SIMD
+#if SIMD
     // x,x x,y x,z x,w
     // y,x y,y y,z y,w
     // z,x z,y z,z z,w
@@ -161,6 +162,24 @@ FMatrix FMatrix::Transpose(const FMatrix& Mat) {
     Result.Row[1] = _mm_shuffle_ps(TempRow0, TempRow2, 0xDD); // 0xDD = 0b11 01 11 01 (3, 1, 3, 1)
     Result.Row[2] = _mm_shuffle_ps(TempRow1, TempRow3, 0x88); // 0x88 = 0b10 00 10 00 (2, 0, 2, 0)
     Result.Row[3] = _mm_shuffle_ps(TempRow1, TempRow3, 0xDD); // 0xDD = 0b11 01 11 01 (3, 1, 3, 1)
+#elif AVX
+    __m256 ymm2 = _mm256_loadu_ps(reinterpret_cast<const float*>(Mat.M));          // ymm2 = { x0, y0, z0, w0, x1, y1, z1, w1 }
+    __m256 ymm3 = _mm256_loadu_ps(reinterpret_cast<const float*>(Mat.M) + 8);      // ymm3 = { x2, y2, z2, w2, x3, y3, z3, w3 }
+    __m256 ymm0 = _mm256_permute2f128_ps(ymm2, ymm3, 0x20);                      // ymm0 = { x0, y0, z0, w0, x2, y2, z2, w2 }
+    __m256 ymm1 = _mm256_permute2f128_ps(ymm2, ymm3, 0x31);                      // ymm1 = { x1, y1, z1, w1, x3, y3, z3, w3 }
+
+    // shuffle to each ymm contain the x, z or y, w elements of every row
+    ymm2 = _mm256_shuffle_ps(ymm0, ymm1, 0x88);                                  // ymm2 = { x0, z0, x1, z1, x2, z2, x3, z3 }
+    ymm3 = _mm256_shuffle_ps(ymm0, ymm1, 0xDD);                                  // ymm3 = { y0, w0, y1, w1, y2, w2, y3, w3 }
+
+    __m256 ymm4 = _mm256_insertf128_ps(ymm2, _mm256_castps256_ps128(ymm3), 1);   // ymm4 = { x0, z0, x1, z1, y0, w0, y1, w1 }
+    __m256 ymm5 = _mm256_permute2f128_ps(ymm2, ymm3, 0x31);                      // ymm5 = { x2, z2, x3, z3, y2, w2, y3, w3 }
+
+    __m256 ymm6 = _mm256_shuffle_ps(ymm4, ymm5, 0x88);                           // ymm6 = { x0, x1, x2, x3, y0, y1, y2, y3 }
+    __m256 ymm7 = _mm256_shuffle_ps(ymm4, ymm5, 0xDD);                           // ymm7 = { z0, z1, z2, z3, w0, w1, w2, w3 }
+
+    _mm256_storeu_ps(reinterpret_cast<float*>(Result.M), ymm6);
+    _mm256_storeu_ps(reinterpret_cast<float*>(Result.M) + 8, ymm7);
 #else
     for (int32 i = 0; i < 4; i++)
         for (int32 j = 0; j < 4; j++)
@@ -172,7 +191,7 @@ FMatrix FMatrix::Transpose(const FMatrix& Mat) {
 // 행렬식 계산 (라플라스 전개, 4x4 행렬)
 float FMatrix::Determinant(const FMatrix& Mat)
 {
-#ifdef SIMD
+#if SIMD
     /**
          * M = [ A B ] (A, B, C, D는 2x2 행렬)
          *     [ C D ]
@@ -225,7 +244,7 @@ float FMatrix::Determinant(const FMatrix& Mat)
 }
 
 FMatrix FMatrix::Inverse(const FMatrix& Mat) {
-#ifdef SIMD
+#if SIMD
     // https://github.com/microsoft/DirectXMath/blob/main/Inc/DirectXMathMatrix.inl
     // Cramer's Rule
     float det = Determinant(Mat);
@@ -446,7 +465,7 @@ FMatrix FMatrix::CreateTranslationMatrix(const FVector& position)
     return translationMatrix;
 }
 
-#ifdef SIMD
+#if SIMD
 float FMatrix::Det2x2(__m128 Mat)
 {
     // Mat = [a, b, c, d]
@@ -566,7 +585,7 @@ FVector4 FMatrix::TransformVector(const FVector4& v, const FMatrix& m)
 
 FVector FMatrix::TransformPosition(const FVector& vector) const
 {
-#ifdef SIMD
+#if SIMD
     FMatrix T = FMatrix::Transpose(*this);
 
     __m128 vec = _mm_set_ps(vector.x, vector.y, vector.z, 1.f);
