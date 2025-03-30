@@ -8,7 +8,7 @@
 #include "UnrealClient.h"
 #include "slate/Widgets/Layout/SSplitter.h"
 #include "LevelEditor/SLevelEditor.h"
-#include "Windows/FThreadStats.h"
+#include "Windows/FWindowsPlatformTime.h"
 
 
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -166,17 +166,12 @@ void FEngineLoop::Render()
 
 void FEngineLoop::Tick()
 {
-    LARGE_INTEGER frequency;
     const double targetFrameTime = 1000.0 / targetFPS; // 한 프레임의 목표 시간 (밀리초 단위)
-
-    QueryPerformanceFrequency(&frequency);
-
-    LARGE_INTEGER startTime, endTime;
     double elapsedTime = 1.0;
 
-    while (bIsExit == false)
+    while (!bIsExit)
     {
-        QueryPerformanceCounter(&startTime);
+        FScopeCycleCounter frameTimer{ TEXT("Fps") };
 
         MSG msg;
         while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
@@ -207,17 +202,16 @@ void FEngineLoop::Tick()
         GUObjectArray.ProcessPendingDestroyObjects();
 
         graphicDevice.SwapBuffer();
+
+        uint64_t currentCycles;
         do
         {
             Sleep(0);
-            QueryPerformanceCounter(&endTime);
-            elapsedTime = (endTime.QuadPart - startTime.QuadPart) * 1000.0 / frequency.QuadPart;
+            currentCycles = FWindowsPlatformTime::Cycles64();
+            
+            elapsedTime = FWindowsPlatformTime::ToMilliseconds(currentCycles - frameTimer.GetStartCycles());;
         }
         while (elapsedTime < targetFrameTime);
-
-        float fps = static_cast<float>(1000.0 / elapsedTime);
-        int frameMs = static_cast<int>(elapsedTime);
-        FThreadStats::SetFPS(fps, frameMs);
     }
 }
 

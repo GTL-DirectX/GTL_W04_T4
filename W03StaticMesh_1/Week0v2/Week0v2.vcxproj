@@ -205,7 +205,6 @@
     <ClCompile Include="Engine\Source\Runtime\Launch\EngineLoop.cpp" />
     <ClCompile Include="Engine\Source\Runtime\Launch\ImGuiManager.cpp" />
     <ClCompile Include="Engine\Source\Runtime\SlateCore\Widgets\SWindow.cpp" />
-    <ClCompile Include="Engine\Source\Runtime\Windows\FThreadStats.cpp" />
     <ClCompile Include="Engine\Source\Runtime\Windows\FWindowsPlatformTime.cpp" />
     <ClCompile Include="Engine\Source\ThirdParty\include\ImGUI\imgui.cpp" />
     <ClCompile Include="Engine\Source\ThirdParty\include\ImGUI\imgui_demo.cpp" />
@@ -286,7 +285,6 @@
     <ClInclude Include="Engine\Source\Runtime\Launch\ImGuiManager.h" />
     <ClInclude Include="Engine\Source\Runtime\SlateCore\Widgets\SWindow.h" />
     <ClInclude Include="Engine\Source\Runtime\Slate\Widgets\Layout\SSplitter.h" />
-    <ClInclude Include="Engine\Source\Runtime\Windows\FThreadStats.h" />
     <ClInclude Include="Engine\Source\Runtime\Windows\FWindowsPlatformTime.h" />
     <ClInclude Include="Engine\Source\ThirdParty\DirectXTK\Include\DDSTextureLoader.h" />
     <ClInclude Include="Engine\Source\ThirdParty\tinyfiledialogs\tinyfiledialogs.h" />

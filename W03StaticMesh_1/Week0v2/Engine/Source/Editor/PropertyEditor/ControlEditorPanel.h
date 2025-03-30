@@ -25,6 +25,8 @@ private:
     float* FOV = nullptr;
     float CameraSpeed = 0.0f;
     float GridScale = 1.0f;
+
+
 };
 
 
