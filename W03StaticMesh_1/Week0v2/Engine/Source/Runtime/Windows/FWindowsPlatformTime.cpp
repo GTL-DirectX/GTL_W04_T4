@@ -1,9 +1,12 @@
 #include "Windows/FWindowsPlatformTime.h"
-#include "Windows/FThreadStats.h"
-#include <sstream>
+
 
 double FWindowsPlatformTime::GSecondsPerCycle = 0.0;
 bool FWindowsPlatformTime::bInitialized = false;
+TMap<FString, double> FWindowsPlatformTime::TimeMap;
+int FWindowsPlatformTime::PickTime = 0;
+double FWindowsPlatformTime::AccumulatedTime = 0.0;
+
 
 void FWindowsPlatformTime::InitTiming()
 {
@@ -48,31 +51,40 @@ uint64_t FWindowsPlatformTime::Cycles64()
     return static_cast<uint64_t>(CycleCount.QuadPart);
 }
 
+
 //-------------------------------------------------------------------------------------------------
 // FScopeCycleCounter 구현
 //-------------------------------------------------------------------------------------------------
-FScopeCycleCounter::FScopeCycleCounter(TStatId StatId)
-    : StartCycles(FPlatformTime::Cycles64())
-    , UsedStatId(StatId)
+FScopeCycleCounter::FScopeCycleCounter(FString Id)
+    : StartCycles(FWindowsPlatformTime::Cycles64())
+    , UsedStatId(TStatId(Id))
 {
-    
 }
 
 FScopeCycleCounter::~FScopeCycleCounter()
 {
-    // 소멸 시 Finish()를 호출해 자동 측정
     Finish();
 }
 
 uint64_t FScopeCycleCounter::Finish()
 {
-    const uint64_t EndCycles = FPlatformTime::Cycles64();
+    const uint64_t EndCycles = FWindowsPlatformTime::Cycles64();
     const uint64_t CycleDiff = EndCycles - StartCycles;
-    double elapsedMs = FPlatformTime::ToMilliseconds(CycleDiff);
+    double elapsedMs = FWindowsPlatformTime::ToMilliseconds(CycleDiff);
 
-    FThreadStats::SetPickingTime(elapsedMs);
-    FThreadStats::AddAccumulatedTime(elapsedMs);
-    FThreadStats::IncrementNumAttempts();
-
+    if (FWindowsPlatformTime::TimeMap.Find(UsedStatId.Name) == nullptr)
+    {
+        FWindowsPlatformTime::TimeMap[UsedStatId.Name] = 0.0;
+    }
+    else
+    {
+        if (UsedStatId.Name == "Picking")
+        {
+            FWindowsPlatformTime::PickTime++;
+            FWindowsPlatformTime::AccumulatedTime += elapsedMs;
+        }
+        FWindowsPlatformTime::TimeMap[UsedStatId.Name] = elapsedMs;
+    }
+        
     return CycleDiff;
 }

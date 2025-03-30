@@ -300,12 +300,6 @@
     <ClInclude Include="Engine\Source\Runtime\InteractiveToolsFramework\BaseGizmos\GizmoRectangleComponent.h">
       <Filter>Engine\Source\Runtime\InteractiveToolsFramework\BaseGizmos</Filter>
     </ClInclude>
-    <ClCompile Include="Engine\Source\Runtime\InteractiveToolsFramework\BaseGizmos\TransformGizmo.cpp">
-      <Filter>Engine\Source\Runtime\InteractiveToolsFramework\BaseGizmos</Filter>
-    </ClCompile>
-    <ClInclude Include="Engine\Source\Runtime\InteractiveToolsFramework\BaseGizmos\TransformGizmo.h">
-      <Filter>Engine\Source\Runtime\InteractiveToolsFramework\BaseGizmos</Filter>
-    </ClInclude>
     <ClInclude Include="Engine\Source\Runtime\Launch\Define.h">
       <Filter>Engine\Source\Runtime\Launch</Filter>
     </ClInclude>
@@ -421,8 +415,8 @@
     <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Actors\Player.cpp" />
     <ClCompile Include="Engine\Source\Runtime\Engine\Classes\Engine\StaticMeshActor.cpp" />
     <ClCompile Include="Engine\Source\Runtime\Engine\Classes\GameFramework\Actor.cpp" />
-    <ClInclude Include="Engine\Source\Runtime\Windows\FThreadStats.h" />
     <ClInclude Include="Engine\Source\Runtime\Windows\FWindowsPlatformTime.h" />
+    <ClInclude Include="Engine\Source\Runtime\InteractiveToolsFramework\BaseGizmos\GizmoActor.h" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Engine\Source\ThirdParty\DirectXTK\Include\DDSTextureLoader.h" />
@@ -512,7 +506,7 @@
     <Natvis Include="Week0v2.natvis" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Engine\Source\Runtime\Windows\FThreadStats.cpp" />
     <ClCompile Include="Engine\Source\Runtime\Windows\FWindowsPlatformTime.cpp" />
+    <ClCompile Include="Engine\Source\Runtime\InteractiveToolsFramework\BaseGizmos\GizmoActor.cpp" />
   </ItemGroup>
 </Project>

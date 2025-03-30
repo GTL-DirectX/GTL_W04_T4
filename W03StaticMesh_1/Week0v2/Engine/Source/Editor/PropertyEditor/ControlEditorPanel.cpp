@@ -14,8 +14,8 @@
 #include "tinyfiledialogs/tinyfiledialogs.h"
 #include "UnrealEd/EditorViewportClient.h"
 #include "PropertyEditor/ShowFlags.h"
-#include "Windows/FThreadStats.h"
 #include "UnrealEd/SceneMgr.h"
+#include "Windows/FWindowsPlatformTime.h"
 
 void ControlEditorPanel::Render()
 {
@@ -507,13 +507,30 @@ void ControlEditorPanel::OnResize(HWND hWnd)
 
 void ControlEditorPanel::CreatePerformanceOverlay()
 {
-    float fps;
-    int frameMs;
-    double pickingTime;
-    int numAttempts;
-    double accumulatedTime;
-    FThreadStats::GetStats(fps, frameMs, pickingTime, numAttempts, accumulatedTime);
-    
+    float fps = 0.0f;
+    int frameMs = 0;
+    double pickingTime = 0.0f;
+    int numAttempts = 0;
+    double accumulatedTime = 0.0f;
+
+    if (FWindowsPlatformTime::TimeMap.Contains(TEXT("Fps")))
+    {
+        double frameElapsed = FWindowsPlatformTime::TimeMap[TEXT("Fps")];
+        if (frameElapsed >= 0)
+        {
+            fps = static_cast<float>(1000.0 / frameElapsed);
+            frameMs = static_cast<int>(frameElapsed);
+        }
+    }
+
+    if (FWindowsPlatformTime::TimeMap.Contains(TEXT("Picking")))
+    {
+        pickingTime = FWindowsPlatformTime::TimeMap[TEXT("Picking")];
+        numAttempts = FWindowsPlatformTime::PickTime;
+        accumulatedTime = FWindowsPlatformTime::AccumulatedTime;
+    }
+
+    // 그리기 전에 창의 위치와 배경 투명도를 설정합니다.
     ImGui::SetNextWindowBgAlpha(0.0f);
     ImGui::SetNextWindowPos(ImVec2(10, 50));
 

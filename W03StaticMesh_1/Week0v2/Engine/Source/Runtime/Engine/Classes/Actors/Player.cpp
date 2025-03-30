@@ -39,8 +39,7 @@ void AEditorPlayer::Input()
         {
             bLeftMouseDown = true;
             
-            // RAII Timer 시작
-            FScopeCycleCounter pickingTimer{ TStatId() };
+            FScopeCycleCounter pickingTimer { TEXT("Picking") };
 
             POINT mousePos;
             GetCursorPos(&mousePos);
