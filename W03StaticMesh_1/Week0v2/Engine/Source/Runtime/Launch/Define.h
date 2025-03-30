@@ -202,7 +202,7 @@ struct FBoundingBox
            (Other.max.z <= max.z);
     }
     
-    bool Intersect(const FVector& rayOrigin, const FVector& rayDir, float& outDistance) const
+    bool IntersectToRay(const FVector& rayOrigin, const FVector& rayDir, float& outDistance) const
     {
         float tmin = -FLT_MAX;
         float tmax = FLT_MAX;

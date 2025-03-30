@@ -24,7 +24,7 @@ class AEditorPlayer : public AActor
 
 private:
     int RayIntersectsObject(const FVector& pickPosition, USceneComponent* obj, float& hitDistance, int& intersectCount);
-    int RayIntersectsObject(const FRay& Ray, USceneComponent* obj, float& hitDistance, int& intersectCount); // Octree
+    inline int RayIntersectsObject(const FRay& Ray, USceneComponent* obj, float& hitDistance, int& intersectCount); // Octree
     void ScreenToViewSpace(int screenX, int screenY, const FMatrix& viewMatrix, const FMatrix& projectionMatrix, FVector& rayOrigin);
     FRay GetMouseRay(int screenX, int screenY); // Octree
     void PickedObjControl();
