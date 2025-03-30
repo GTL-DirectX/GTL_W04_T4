@@ -18,6 +18,8 @@
 
 #include "UserInterface/Console.h"
 
+class UActorComponent;
+
 struct FVertexSimple
 {
     float x, y, z;    // Position
@@ -170,6 +172,11 @@ struct FRay
     FVector Origin;
     FVector Direction;
 };
+struct HitResult {
+    const UActorComponent* Component = nullptr;
+    float Distance = FLT_MAX;
+    int IntersectCount = 0;
+};
 struct FBoundingBox
 {
     FBoundingBox() = default;
@@ -192,6 +199,7 @@ struct FBoundingBox
         return std::max({ diff.x, diff.y, diff.z });
     }
 
+    // 포함
     bool Contains(const FBoundingBox Other) const
     {
         return (Other.min.x >= min.x) &&
@@ -200,6 +208,14 @@ struct FBoundingBox
            (Other.max.x <= max.x) &&
            (Other.max.y <= max.y) &&
            (Other.max.z <= max.z);
+    }
+
+    // 겹침
+    bool Intersect(const FBoundingBox& Other) const
+    {
+        return (min.x <= Other.max.x && max.x >= Other.min.x) && // X축 겹침
+               (min.y <= Other.max.y && max.y >= Other.min.y) && // Y축 겹침
+               (min.z <= Other.max.z && max.z >= Other.min.z);   // Z축 겹침
     }
     
     bool IntersectToRay(const FVector& rayOrigin, const FVector& rayDir, float& outDistance) const

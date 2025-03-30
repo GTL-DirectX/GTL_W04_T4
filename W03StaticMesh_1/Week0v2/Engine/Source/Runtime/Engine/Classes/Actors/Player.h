@@ -1,4 +1,6 @@
 #pragma once
+#include <mutex>
+
 #include "GameFramework/Actor.h"
 #include "UObject/ObjectMacros.h"
 #include "UObject/ObjectTypes.h"
@@ -38,6 +40,7 @@ private:
     POINT m_LastMousePos;
     ControlMode cMode = CM_TRANSLATION;
     CoordiMode cdMode = CDM_WORLD;
+    std::mutex ResultMutex;
 
 public:
     void SetMode(ControlMode _Mode) { cMode = _Mode; }

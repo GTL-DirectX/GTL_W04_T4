@@ -1,5 +1,7 @@
 #include "Player.h"
 
+#include <execution>
+
 #include "UnrealClient.h"
 #include "World.h"
 #include "BaseGizmos/GizmoArrowComponent.h"
@@ -56,10 +58,10 @@ void AEditorPlayer::Input()
             // }
             ScreenToClient(GetEngine().hWnd, &mousePos);
 
-            FVector pickPosition;
-
-            const auto& ActiveViewport = GetEngine().GetLevelEditor()->GetActiveViewportClient();
-            ScreenToViewSpace(mousePos.x, mousePos.y, ActiveViewport->GetViewMatrix(), ActiveViewport->GetProjectionMatrix(), pickPosition);
+            // FVector pickPosition;
+            //
+            // const auto& ActiveViewport = GetEngine().GetLevelEditor()->GetActiveViewportClient();
+            // ScreenToViewSpace(mousePos.x, mousePos.y, ActiveViewport->GetViewMatrix(), ActiveViewport->GetProjectionMatrix(), pickPosition);
             FRay ray = GetMouseRay(mousePos.x, mousePos.y);
             PickActor(ray);
             // if (!PickGizmo(pickPosition))
@@ -277,45 +279,41 @@ void AEditorPlayer::PickActor(const FRay& Ray)
 {
     if (!(ShowFlags::GetInstance().currentFlags & EEngineShowFlags::SF_Primitives)) return;
 
+    HitResult BestHit;
 
     TArray<AActor*> CandidateActors;
+
     GetWorld()->GetRootOctree()->QueryTree(Ray.Origin, Ray.Direction, CandidateActors);
     
-    const UActorComponent* Possible = nullptr;
-    int maxIntersect = 0;
-    float minDistance = FLT_MAX;
-    
-    for (const auto iter : CandidateActors)
-    {
-        UPrimitiveComponent* pObj = Cast<UPrimitiveComponent>(iter->GetRootComponent());
-        if (!pObj || pObj->IsA<UGizmoBaseComponent>())
+    // std::cout << "Candidate: " << CandidateActors.Num() << std::endl;
+    std::for_each(std::execution::par_unseq,
+        CandidateActors.begin(), 
+        CandidateActors.end(),
+    [&](const AActor* Actor) {
+        if (UPrimitiveComponent* pObj = Cast<UPrimitiveComponent>(Actor->GetRootComponent()))
         {
-            continue;
-        }
-        
-        float Distance = 0.0f;
-        int currentIntersectCount = 0;
-        
-        if (RayIntersectsObject(Ray, pObj, Distance, currentIntersectCount))
-        {
-            std::cout << *pObj->GetName() << ":" << Distance << std::endl;
-            if (Distance < minDistance)
+            // if (pObj->IsA<UGizmoBaseComponent>()) return; // 기즈모 안뜸
+            
+            float Distance;
+            int IntersectCount;
+            if (RayIntersectsObject(Ray, pObj, Distance, IntersectCount))
             {
-                minDistance = Distance;
-                maxIntersect = currentIntersectCount;
-                Possible = pObj;
-            }
-            else if (abs(Distance - minDistance) < FLT_EPSILON && currentIntersectCount > maxIntersect)
-            {
-                maxIntersect = currentIntersectCount;
-                Possible = pObj;
+                std::lock_guard<std::mutex> lock(ResultMutex);
+                if (Distance < BestHit.Distance || 
+                    (abs(Distance - BestHit.Distance) < FLT_EPSILON && 
+                     IntersectCount > BestHit.IntersectCount))
+                {
+                    BestHit.Component = pObj;
+                    BestHit.Distance = Distance;
+                    BestHit.IntersectCount = IntersectCount;
+                }
             }
         }
-    }
-    
-    if (Possible)
+    });
+
+    if (BestHit.Component)
     {
-        GetWorld()->SetPickedActor(Possible->GetOwner());
+        GetWorld()->SetPickedActor(BestHit.Component->GetOwner());
     }
 }
 
