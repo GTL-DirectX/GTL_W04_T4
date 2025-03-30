@@ -853,6 +853,21 @@ ID3D11Buffer* FRenderer::CreateConeBuffer(UINT numCones) const
     return ConeBuffer;
 }
 
+ID3D11Buffer* FRenderer::CreateBoundingSphereBuffer(UINT numSpheres) const
+{
+    D3D11_BUFFER_DESC bufferDesc = {};
+    bufferDesc.Usage = D3D11_USAGE_DYNAMIC;
+    bufferDesc.ByteWidth = sizeof(FBoundingSphere) * numSpheres;
+    bufferDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+    bufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+    bufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+    bufferDesc.StructureByteStride = sizeof(FBoundingSphere);
+    ID3D11Buffer* SphereBuffer = nullptr;
+    Graphics->Device->CreateBuffer(&bufferDesc, nullptr, &SphereBuffer);
+    return SphereBuffer;
+    
+}
+
 ID3D11ShaderResourceView* FRenderer::CreateBoundingBoxSRV(ID3D11Buffer* pBoundingBoxBuffer, UINT numBoundingBoxes)
 {
     D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
@@ -888,6 +903,18 @@ ID3D11ShaderResourceView* FRenderer::CreateConeSRV(ID3D11Buffer* pConeBuffer, UI
 
     Graphics->Device->CreateShaderResourceView(pConeBuffer, &srvDesc, &pConeSRV);
     return pConeSRV;
+}
+
+ID3D11ShaderResourceView* FRenderer::CreateBoundingSphereSRV(ID3D11Buffer* pSphereBuffer, UINT numSpheres)
+{
+    D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
+    srvDesc.Format = DXGI_FORMAT_UNKNOWN;
+    srvDesc.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
+    srvDesc.Buffer.ElementOffset = 0;
+    srvDesc.Buffer.NumElements = numSpheres;
+
+    Graphics->Device->CreateShaderResourceView(pSphereBuffer, &srvDesc, &pBoundingSphereSRV);
+    return pBoundingSphereSRV;
 }
 
 void FRenderer::UpdateBoundingBoxBuffer(ID3D11Buffer* pBoundingBoxBuffer, const TArray<FBoundingBox>& BoundingBoxes, int numBoundingBoxes) const
@@ -927,6 +954,19 @@ void FRenderer::UpdateConesBuffer(ID3D11Buffer* pConeBuffer, const TArray<FCone>
         pData[i] = Cones[i];
     }
     Graphics->DeviceContext->Unmap(pConeBuffer, 0);
+}
+
+void FRenderer::UpdateBoundingSphereBuffer(ID3D11Buffer* pSphereBuffer, const TArray<FBoundingSphere>& Spheres, int numSpheres) const
+{
+    if (!pSphereBuffer) return;
+    D3D11_MAPPED_SUBRESOURCE mappedResource;
+    Graphics->DeviceContext->Map(pSphereBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+    auto pData = reinterpret_cast<FBoundingSphere*>(mappedResource.pData);
+    for (int i = 0; i < Spheres.Num(); ++i)
+    {
+        pData[i] = Spheres[i];
+    }
+    Graphics->DeviceContext->Unmap(pSphereBuffer, 0);
 }
 
 void FRenderer::UpdateGridConstantBuffer(const FGridParameters& gridParams) const
@@ -1185,16 +1225,28 @@ void FRenderer::FrustumCulling(std::shared_ptr<FEditorViewportClient> ActiveView
 {
     TArray<UStaticMeshComponent*> NewStaticMeshObjs;
 
+    std::clock_t start = std::clock();
     for (UStaticMeshComponent* StaticMesh : StaticMeshObjs)
     {
         if (!StaticMesh)
             continue;
 
-        if (ActiveViewport->GetCameraFrustum().IntersectMesh(StaticMesh->GetWorldSpaceBoundingBox()))
+        // Bounding Box
+        /*if (ActiveViewport->GetCameraFrustum().IntersectMesh(StaticMesh->GetWorldSpaceBoundingBox()))
+        {
+            NewStaticMeshObjs.Emplace(StaticMesh);
+        }*/
+
+        // Bounding Sphere
+        if (ActiveViewport->GetCameraFrustum().IntersectMesh(StaticMesh->GetWorldSpaceBoundingSphere()))
         {
             NewStaticMeshObjs.Emplace(StaticMesh);
         }
+
     }
+
+    UE_LOG(LogLevel::Display, "FrustumCulling : %f", (std::clock() - start) / (double)CLOCKS_PER_SEC);
+
     //UE_LOG(LogLevel::Display, "FrustumCulling : %d -> %d", StaticMeshObjs.Num(), NewStaticMeshObjs.Num());
     StaticMeshObjs = NewStaticMeshObjs;
 }

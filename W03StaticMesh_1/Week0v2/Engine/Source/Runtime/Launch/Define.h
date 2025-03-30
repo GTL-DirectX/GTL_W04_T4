@@ -127,6 +127,9 @@ namespace OBJ
 
         FVector BoundingBoxMin;
         FVector BoundingBoxMax;
+
+        FVector BoundingSphereCenter;
+        float BoundingSphereRadius;
     };
 }
 
@@ -165,10 +168,11 @@ struct FPoint
 
     float x, y;
 };
+
 struct FBoundingBox
 {
-    FBoundingBox(){}
-    FBoundingBox(FVector _min, FVector _max) : min(_min), max(_max) {}
+    FBoundingBox() : min(0, 0, 0), pad(), max(0, 0, 0), pad1(0) {}
+    FBoundingBox(FVector _min, FVector _max) : min(_min), pad(), max(_max), pad1(0) {}
 	FVector min; // Minimum extents
 	float pad;
 	FVector max; // Maximum extents
@@ -250,6 +254,52 @@ struct FBoundingBox
     }
 
 };
+
+struct FBoundingSphere
+{
+    FBoundingSphere() : Center(0, 0, 0), Radius(0) {}
+    FBoundingSphere(FVector InCenter, float InRadius) : Center(InCenter), Radius(InRadius) {}
+
+    FVector Center;
+    float Radius;
+
+    bool Intersect(const FVector& rayOrigin, const FVector& rayDir, float& outDistance)
+    {
+        // 레이의 원점에서 구의 중심으로 향하는 벡터
+        FVector L = Center - rayOrigin;
+
+        // 레이의 방향과 구의 중심 사이의 거리
+        float tca = L.Dot(rayDir);
+        // tca가 음수이면 구의 중심이 레이의 반대 방향에 있다는 의미
+        if (tca < 0)
+            return false;
+
+        // L과 구의 중심 사이의 거리의 제곱
+        float d2 = L.Dot(L) - tca * tca;
+        // d2가 구의 반지름의 제곱보다 크면 레이가 구와 교차하지 않음
+        if (d2 > Radius * Radius)
+            return false;
+
+        // 구의 중심에서 교차 지점까지의 거리
+        float thc = sqrt(Radius * Radius - d2);
+
+        float t0 = tca - thc; // 레이가 구와 처음 교차하는 지점
+        float t1 = tca + thc; // 레이가 구와 두 번째 교차하는 지점
+
+        // t0이 t1보다 크면 두 교차 지점이 바뀐 것이므로 교체
+        if (t0 > t1)
+            std::swap(t0, t1);
+
+        // t0이 음수이면 레이의 시작점이 구 내부에 있음
+        if (t0 < 0)
+            return false;
+        // outDistance에 t0 대입
+        outDistance = t0;
+        return true;
+    }
+
+};
+
 struct FCone
 {
     FVector ConeApex; // 원뿔의 꼭짓점

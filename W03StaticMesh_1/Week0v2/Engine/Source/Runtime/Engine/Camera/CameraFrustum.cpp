@@ -87,3 +87,13 @@ bool FCameraFrustum::IntersectMesh(const FBoundingBox& Box) const
     }
     return true;
 }
+
+bool FCameraFrustum::IntersectMesh(const FBoundingSphere& Sphere) const
+{
+    for (int i = 0; i < 6; ++i)
+    {
+        if (Planes[i].DistanceTo(Sphere.Center) < -Sphere.Radius)
+            return false;
+    }
+    return true;
+}
