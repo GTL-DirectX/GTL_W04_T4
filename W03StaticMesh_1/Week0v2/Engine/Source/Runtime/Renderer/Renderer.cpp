@@ -20,6 +20,7 @@
 #include "PropertyEditor/ShowFlags.h"
 #include "UObject/UObjectIterator.h"
 #include "Components/SkySphereComponent.h"
+#include "Windows/FWindowsPlatformTime.h"
 
 void FRenderer::Initialize(FGraphicsDevice* graphics)
 {
@@ -1067,6 +1068,7 @@ void FRenderer::RenderStaticMeshes(UWorld* World, std::shared_ptr<FEditorViewpor
     // Occlusion Culling
     // Material Sorting
     PrepareShader();
+    FScopeCycleCounter meshRenderTimer{ TEXT("StaticMesh") };
     for (UStaticMeshComponent* StaticMeshComp : StaticMeshObjs)
     {
         FMatrix Model = JungleMath::CreateModelMatrix(
@@ -1225,7 +1227,7 @@ void FRenderer::FrustumCulling(std::shared_ptr<FEditorViewportClient> ActiveView
 {
     TArray<UStaticMeshComponent*> NewStaticMeshObjs;
 
-    //std::clock_t start = std::clock();
+    FScopeCycleCounter frustumCullingTimer{ TEXT("FrustumCulling") };
     for (UStaticMeshComponent* StaticMesh : StaticMeshObjs)
     {
         if (!StaticMesh)
@@ -1244,8 +1246,6 @@ void FRenderer::FrustumCulling(std::shared_ptr<FEditorViewportClient> ActiveView
         }
 
     }
-
-    //UE_LOG(LogLevel::Display, "FrustumCulling : %f", (std::clock() - start) / (double)CLOCKS_PER_SEC);
 
     //UE_LOG(LogLevel::Display, "FrustumCulling : %d -> %d", StaticMeshObjs.Num(), NewStaticMeshObjs.Num());
     StaticMeshObjs = NewStaticMeshObjs;

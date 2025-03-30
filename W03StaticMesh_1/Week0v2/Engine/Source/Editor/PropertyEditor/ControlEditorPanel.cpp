@@ -512,6 +512,8 @@ void ControlEditorPanel::CreatePerformanceOverlay()
     double pickingTime = 0.0f;
     int numAttempts = 0;
     double accumulatedTime = 0.0f;
+    double meshRenderingTime = 0.0f;
+    double frustumCulling = 0.0f;
 
     if (FWindowsPlatformTime::TimeMap.Contains(TEXT("Fps")))
     {
@@ -528,6 +530,16 @@ void ControlEditorPanel::CreatePerformanceOverlay()
         pickingTime = FWindowsPlatformTime::TimeMap[TEXT("Picking")];
         numAttempts = FWindowsPlatformTime::PickTime;
         accumulatedTime = FWindowsPlatformTime::AccumulatedTime;
+    }
+
+    if (FWindowsPlatformTime::TimeMap.Contains(TEXT("StaticMesh")))
+    {
+        meshRenderingTime = FWindowsPlatformTime::TimeMap[TEXT("StaticMesh")];
+    }
+
+    if (FWindowsPlatformTime::TimeMap.Contains(TEXT("FrustumCulling")))
+    {
+        frustumCulling = FWindowsPlatformTime::TimeMap[TEXT("FrustumCulling")];
     }
 
     // 그리기 전에 창의 위치와 배경 투명도를 설정합니다.
@@ -548,6 +560,8 @@ void ControlEditorPanel::CreatePerformanceOverlay()
         ImGui::Text("Picking Time : %.2f ms", pickingTime);
         ImGui::Text("Num Attempts : %d", numAttempts);
         ImGui::Text("Accumulated Time : %.2f ms", accumulatedTime);
+        ImGui::Text("Static Mesh Render : %.5f ms", meshRenderingTime);
+        ImGui::Text("Frustum Culling : %.5f ms", frustumCulling);
         ImGui::PopStyleColor();
         ImGui::End();
     }
