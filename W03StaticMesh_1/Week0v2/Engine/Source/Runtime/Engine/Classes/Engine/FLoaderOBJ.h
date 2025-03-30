@@ -376,6 +376,9 @@ struct FLoaderOBJ
 
         // Calculate StaticMesh BoundingBox
         ComputeBoundingBox(OutStaticMesh.Vertices, OutStaticMesh.BoundingBoxMin, OutStaticMesh.BoundingBoxMax);
+
+        // Calculate StaticMesh BoundingSphere
+        ComputeBoundingSphere(OutStaticMesh.Vertices, OutStaticMesh.BoundingSphereCenter, OutStaticMesh.BoundingSphereRadius);
         
         return true;
     }
@@ -416,6 +419,24 @@ struct FLoaderOBJ
 
         OutMinVector = MinVector;
         OutMaxVector = MaxVector;
+    }
+
+    static void ComputeBoundingSphere(const TArray<FVertexSimple>& InVertices, FVector& OutCenter, float& OutRadius)
+    {
+        FVector MinVector = { FLT_MAX, FLT_MAX, FLT_MAX };
+        FVector MaxVector = { -FLT_MAX, -FLT_MAX, -FLT_MAX };
+
+        for (int32 i = 0; i < InVertices.Num(); i++)
+        {
+            MinVector.x = std::min(MinVector.x, InVertices[i].x);
+            MinVector.y = std::min(MinVector.y, InVertices[i].y);
+            MinVector.z = std::min(MinVector.z, InVertices[i].z);
+            MaxVector.x = std::max(MaxVector.x, InVertices[i].x);
+            MaxVector.y = std::max(MaxVector.y, InVertices[i].y);
+            MaxVector.z = std::max(MaxVector.z, InVertices[i].z);
+        }
+        OutCenter = (MinVector + MaxVector) * 0.5f;
+        OutRadius = MinVector.Distance(MaxVector) * 0.5f;
     }
 };
 
@@ -570,6 +591,10 @@ public:
         File.write(reinterpret_cast<const char*>(&StaticMesh.BoundingBoxMin), sizeof(FVector));
         File.write(reinterpret_cast<const char*>(&StaticMesh.BoundingBoxMax), sizeof(FVector));
         
+        // Bounding Sphere
+        File.write(reinterpret_cast<const char*>(&StaticMesh.BoundingSphereCenter), sizeof(FVector));
+        File.write(reinterpret_cast<const char*>(&StaticMesh.BoundingSphereRadius), sizeof(float));
+
         File.close();
         return true;
     }
@@ -671,6 +696,10 @@ public:
         // Bounding Box
         File.read(reinterpret_cast<char*>(&OutStaticMesh.BoundingBoxMin), sizeof(FVector));
         File.read(reinterpret_cast<char*>(&OutStaticMesh.BoundingBoxMax), sizeof(FVector));
+
+        // Bounding Sphere
+        File.read(reinterpret_cast<char*>(&OutStaticMesh.BoundingSphereCenter), sizeof(FVector));
+        File.read(reinterpret_cast<char*>(&OutStaticMesh.BoundingSphereRadius), sizeof(float));
         
         File.close();
 

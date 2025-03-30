@@ -1,5 +1,7 @@
 #include "PrimitiveComponent.h"
 
+#include "Math/MathUtility.h"
+
 UPrimitiveComponent::UPrimitiveComponent()
 {
 }
@@ -95,4 +97,49 @@ bool UPrimitiveComponent::IntersectRayTriangle(const FVector& rayOrigin, const F
     }
 
     return false;
+}
+
+FBoundingBox UPrimitiveComponent::GetWorldSpaceBoundingBox()
+{
+    FMatrix ScaleMatrix = FMatrix::CreateScale(GetWorldScale().x, GetWorldScale().y, GetWorldScale().z);
+    FMatrix RotationMatrix = FMatrix::CreateRotation(GetWorldRotation().x, GetWorldRotation().y, GetWorldRotation().z);
+    FMatrix TranslationMatrix = FMatrix::CreateTranslationMatrix(GetWorldLocation());
+    FMatrix WorldMatrix = ScaleMatrix * RotationMatrix * TranslationMatrix;
+
+    FVector Corners[8];
+    Corners[0] = AABB.min;
+    Corners[1] = FVector(AABB.max.x, AABB.min.y, AABB.min.z);
+    Corners[2] = FVector(AABB.min.x, AABB.max.y, AABB.min.z);
+    Corners[3] = FVector(AABB.max.x, AABB.max.y, AABB.min.z);
+    Corners[4] = FVector(AABB.min.x, AABB.min.y, AABB.max.z);
+    Corners[5] = FVector(AABB.max.x, AABB.min.y, AABB.max.z);
+    Corners[6] = FVector(AABB.min.x, AABB.max.y, AABB.max.z);
+    Corners[7] = AABB.max;
+
+    FVector NewMin(FLT_MAX, FLT_MAX, FLT_MAX);
+    FVector NewMax(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+    FVector worldCorner;
+    for (int i = 0; i < 8; ++i)
+    {
+        worldCorner = WorldMatrix.TransformPosition(Corners[i]);
+        NewMin.x = FMath::Min(NewMin.x, worldCorner.x);
+        NewMin.y = FMath::Min(NewMin.y, worldCorner.y);
+        NewMin.z = FMath::Min(NewMin.z, worldCorner.z);
+        NewMax.x = FMath::Max(NewMax.x, worldCorner.x);
+        NewMax.y = FMath::Max(NewMax.y, worldCorner.y);
+        NewMax.z = FMath::Max(NewMax.z, worldCorner.z);
+    }
+
+    return FBoundingBox(NewMin, NewMax);
+}
+
+FBoundingSphere UPrimitiveComponent::GetWorldSpaceBoundingSphere()
+{
+    FMatrix ScaleMatrix = FMatrix::CreateScale(GetWorldScale().x, GetWorldScale().y, GetWorldScale().z);
+    FMatrix RotationMatrix = FMatrix::CreateRotation(GetWorldRotation().x, GetWorldRotation().y, GetWorldRotation().z);
+    FMatrix TranslationMatrix = FMatrix::CreateTranslationMatrix(GetWorldLocation());
+    FMatrix WorldMatrix = ScaleMatrix * RotationMatrix * TranslationMatrix;
+    FVector Center = WorldMatrix.TransformPosition(BoundingSphere.Center);
+
+    return FBoundingSphere(Center, BoundingSphere.Radius);
 }

@@ -25,6 +25,7 @@ public:
         staticMesh = value;
         OverrideMaterials.SetNum(value->GetMaterials().Num());
         AABB = FBoundingBox(staticMesh->GetRenderData()->BoundingBoxMin, staticMesh->GetRenderData()->BoundingBoxMax);
+        BoundingSphere = FBoundingSphere(staticMesh->GetRenderData()->BoundingSphereCenter, staticMesh->GetRenderData()->BoundingSphereRadius);
     }
 
 protected:

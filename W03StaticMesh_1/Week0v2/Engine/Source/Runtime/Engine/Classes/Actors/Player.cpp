@@ -41,10 +41,12 @@ void AEditorPlayer::Input()
             
             FScopeCycleCounter pickingTimer { TEXT("Picking") };
 
+            // 마우스 위치 획득
             POINT mousePos;
             GetCursorPos(&mousePos);
             GetCursorPos(&m_LastMousePos);
 
+            // 마우스 위치를 클라이언트 영역으로 변환
             uint32 UUID = GetEngine().graphicDevice.GetPixelUUID(mousePos);
             // TArray<UObject*> objectArr = GetWorld()->GetObjectArr();
             for ( const auto obj : TObjectRange<USceneComponent>())

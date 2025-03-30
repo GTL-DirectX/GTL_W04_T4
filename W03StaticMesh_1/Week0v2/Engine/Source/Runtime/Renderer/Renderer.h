@@ -127,13 +127,16 @@ public: // line shader
     ID3D11Buffer* CreateBoundingBoxBuffer(UINT numBoundingBoxes) const;
     ID3D11Buffer* CreateOBBBuffer(UINT numBoundingBoxes) const;
     ID3D11Buffer* CreateConeBuffer(UINT numCones) const;
+    ID3D11Buffer* CreateBoundingSphereBuffer(UINT numSpheres) const;
     ID3D11ShaderResourceView* CreateBoundingBoxSRV(ID3D11Buffer* pBoundingBoxBuffer, UINT numBoundingBoxes);
     ID3D11ShaderResourceView* CreateOBBSRV(ID3D11Buffer* pBoundingBoxBuffer, UINT numBoundingBoxes);
     ID3D11ShaderResourceView* CreateConeSRV(ID3D11Buffer* pConeBuffer, UINT numCones);
+    ID3D11ShaderResourceView* CreateBoundingSphereSRV(ID3D11Buffer* pSphereBuffer, UINT numSpheres);
 
     void UpdateBoundingBoxBuffer(ID3D11Buffer* pBoundingBoxBuffer, const TArray<FBoundingBox>& BoundingBoxes, int numBoundingBoxes) const;
     void UpdateOBBBuffer(ID3D11Buffer* pBoundingBoxBuffer, const TArray<FOBB>& BoundingBoxes, int numBoundingBoxes) const;
     void UpdateConesBuffer(ID3D11Buffer* pConeBuffer, const TArray<FCone>& Cones, int numCones) const;
+    void UpdateBoundingSphereBuffer(ID3D11Buffer* pSphereBuffer, const TArray<FBoundingSphere>& Spheres, int numSpheres) const;
 
     //Render Pass Demo
     void PrepareRender();
@@ -143,6 +146,11 @@ public: // line shader
     void RenderGizmos(const UWorld* World, const std::shared_ptr<FEditorViewportClient>& ActiveViewport);
     void RenderLight(UWorld* World, std::shared_ptr<FEditorViewportClient> ActiveViewport);
     void RenderBillboards(UWorld* World,std::shared_ptr<FEditorViewportClient> ActiveViewport);
+
+private:
+    void FrustumCulling(std::shared_ptr<FEditorViewportClient> ActiveViewport);
+    //void OcclusionCulling(std::shared_ptr<FEditorViewportClient> ActiveViewport);
+
 private:
     TArray<UStaticMeshComponent*> StaticMeshObjs;
     TArray<UGizmoBaseComponent*> GizmoObjs;
@@ -157,5 +165,7 @@ public:
     ID3D11ShaderResourceView* pBBSRV = nullptr;
     ID3D11ShaderResourceView* pConeSRV = nullptr;
     ID3D11ShaderResourceView* pOBBSRV = nullptr;
+    ID3D11ShaderResourceView* pBoundingSphereSRV = nullptr;
+
 };
 

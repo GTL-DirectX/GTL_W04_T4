@@ -417,6 +417,8 @@
     <ClCompile Include="Engine\Source\Runtime\Engine\Classes\GameFramework\Actor.cpp" />
     <ClInclude Include="Engine\Source\Runtime\Windows\FWindowsPlatformTime.h" />
     <ClInclude Include="Engine\Source\Runtime\InteractiveToolsFramework\BaseGizmos\GizmoActor.h" />
+    <ClInclude Include="Engine\Source\Runtime\Engine\Camera\CameraFrustum.h" />
+
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Engine\Source\ThirdParty\DirectXTK\Include\DDSTextureLoader.h" />
@@ -508,5 +510,8 @@
   <ItemGroup>
     <ClCompile Include="Engine\Source\Runtime\Windows\FWindowsPlatformTime.cpp" />
     <ClCompile Include="Engine\Source\Runtime\InteractiveToolsFramework\BaseGizmos\GizmoActor.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Engine\Source\Runtime\Engine\Camera\CameraFrustum.cpp" />
   </ItemGroup>
 </Project>
