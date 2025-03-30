@@ -1,5 +1,5 @@
 #include "Define.h"
-#define AVX 1
+#define AVX 0
 #define SSE 1
 
 // 단위 행렬 정의
@@ -777,7 +777,13 @@ FVector FMatrix::TransformVector(const FVector& Vec, const FMatrix& Mat)
     R = _mm_add_ps(R, _mm_mul_ps(VY, Mat.Row[1]));
     R = _mm_add_ps(R, _mm_mul_ps(VZ, Mat.Row[2]));
 
-    _mm_storeu_ps(reinterpret_cast<float*>(&Result), R);
+    //@Note: Vector는 float[3]이므로 reinterpret_cast를 통해 __m128을 변환 시 메모리 침식이 일어남
+    //_mm_storeu_ps(reinterpret_cast<float*>(&Result), R);
+    _mm_store_ss(&Result.x, R);
+    R = _mm_shuffle_ps(R, R, _MM_SHUFFLE(0, 3, 2, 1));
+    _mm_store_ss(&Result.y, R);
+    R = _mm_shuffle_ps(R, R, _MM_SHUFFLE(0, 3, 2, 1));
+    _mm_store_ss(&Result.z, R);
 #else
     // 4x4 행렬을 사용하여 벡터 변환 (W = 0으로 가정, 방향 벡터)
     Result.x = Vec.x * Mat.M[0][0] + Vec.y * Mat.M[1][0] + Vec.z * Mat.M[2][0] + 0.0f * Mat.M[3][0];
@@ -837,7 +843,13 @@ FVector FMatrix::TransformPosition(const FVector& Vec) const
     __m128 Mask = _mm_cmpneq_ps(W, _mm_setzero_ps());   // w가 0이 아닌 경우
     R = _mm_blendv_ps(R, _mm_div_ps(R, W), Mask);
 
-    _mm_storeu_ps(reinterpret_cast<float*>(&Result), R);
+    //@Note: Vector는 float[3]이므로 reinterpret_cast를 통해 __m128을 변환 시 메모리 침식이 일어남
+    //_mm_storeu_ps(reinterpret_cast<float*>(&Result), R);
+    _mm_store_ss(&Result.x, R);
+    R = _mm_shuffle_ps(R, R, _MM_SHUFFLE(0, 3, 2, 1));
+    _mm_store_ss(&Result.y, R);
+    R = _mm_shuffle_ps(R, R, _MM_SHUFFLE(0, 3, 2, 1));
+    _mm_store_ss(&Result.z, R);
     return Result;
 #else
 	float x = M[0][0] * Vec.x + M[1][0] * Vec.y + M[2][0] * Vec.z + M[3][0];
