@@ -27,6 +27,7 @@ class FCameraFrustum
 public:
     void BuildFromView(FEditorViewportClient* ViewportCamera);
     bool IntersectMesh(const FBoundingBox& Box) const;
+    bool IntersectMesh(const FBoundingSphere& Sphere) const;
     //bool IntersectSphere(const FVector& Center, float Radius) const;
 
 private:

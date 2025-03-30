@@ -106,7 +106,6 @@ FBoundingBox UPrimitiveComponent::GetWorldSpaceBoundingBox()
     FMatrix TranslationMatrix = FMatrix::CreateTranslationMatrix(GetWorldLocation());
     FMatrix WorldMatrix = ScaleMatrix * RotationMatrix * TranslationMatrix;
 
-
     FVector Corners[8];
     Corners[0] = AABB.min;
     Corners[1] = FVector(AABB.max.x, AABB.min.y, AABB.min.z);
@@ -132,4 +131,15 @@ FBoundingBox UPrimitiveComponent::GetWorldSpaceBoundingBox()
     }
 
     return FBoundingBox(NewMin, NewMax);
+}
+
+FBoundingSphere UPrimitiveComponent::GetWorldSpaceBoundingSphere()
+{
+    FMatrix ScaleMatrix = FMatrix::CreateScale(GetWorldScale().x, GetWorldScale().y, GetWorldScale().z);
+    FMatrix RotationMatrix = FMatrix::CreateRotation(GetWorldRotation().x, GetWorldRotation().y, GetWorldRotation().z);
+    FMatrix TranslationMatrix = FMatrix::CreateTranslationMatrix(GetWorldLocation());
+    FMatrix WorldMatrix = ScaleMatrix * RotationMatrix * TranslationMatrix;
+    FVector Center = WorldMatrix.TransformPosition(BoundingSphere.Center);
+
+    return FBoundingSphere(Center, BoundingSphere.Radius);
 }

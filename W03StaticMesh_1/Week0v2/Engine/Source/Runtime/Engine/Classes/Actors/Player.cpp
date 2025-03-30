@@ -44,6 +44,7 @@ void AEditorPlayer::Input()
             // RAII Timer 시작
             FScopeCycleCounter pickingTimer{ TStatId() };
 
+            // 마우스 위치 획득
             POINT mousePos;
             GetCursorPos(&mousePos);
             GetCursorPos(&m_LastMousePos);

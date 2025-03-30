@@ -13,18 +13,48 @@ void FCameraFrustum::BuildFromView(FEditorViewportClient* ViewportCamera)
     FMatrix Proj = ViewportCamera->GetProjectionMatrix();
     FMatrix ViewProj = View * Proj;
 
-    // Near
-    Planes[0] = FPlane(ViewProj.M[0][3] + ViewProj.M[0][2], ViewProj.M[1][3] + ViewProj.M[1][2], ViewProj.M[2][3] + ViewProj.M[2][2], ViewProj.M[3][3] + ViewProj.M[3][2]);
+    // Near4
+    Planes[0] = FPlane(
+        ViewProj.M[0][3] + ViewProj.M[0][2],
+        ViewProj.M[1][3] + ViewProj.M[1][2],
+        ViewProj.M[2][3] + ViewProj.M[2][2],
+        ViewProj.M[3][3] + ViewProj.M[3][2]
+    );
     // Far
-    Planes[1] = FPlane(ViewProj.M[0][3] + ViewProj.M[0][1], ViewProj.M[1][3] + ViewProj.M[1][1], ViewProj.M[2][3] + ViewProj.M[2][1], ViewProj.M[3][3] + ViewProj.M[3][1]);
+    Planes[1] = FPlane(
+        ViewProj.M[0][3] - ViewProj.M[0][2],
+        ViewProj.M[1][3] - ViewProj.M[1][2],
+        ViewProj.M[2][3] - ViewProj.M[2][2],
+        ViewProj.M[3][3] - ViewProj.M[3][2]
+    );
     // Left
-    Planes[2] = FPlane(ViewProj.M[0][3] + ViewProj.M[0][0], ViewProj.M[1][3] + ViewProj.M[1][0], ViewProj.M[2][3] + ViewProj.M[2][0], ViewProj.M[3][3] + ViewProj.M[3][0]);
+    Planes[2] = FPlane(
+        ViewProj.M[0][3] + ViewProj.M[0][0],
+        ViewProj.M[1][3] + ViewProj.M[1][0],
+        ViewProj.M[2][3] + ViewProj.M[2][0],
+        ViewProj.M[3][3] + ViewProj.M[3][0]
+    );
     // Right
-    Planes[3] = FPlane(ViewProj.M[0][3] - ViewProj.M[0][0], ViewProj.M[1][3] - ViewProj.M[1][0], ViewProj.M[2][3] - ViewProj.M[2][0], ViewProj.M[3][3] - ViewProj.M[3][0]);
+    Planes[3] = FPlane(
+        ViewProj.M[0][3] - ViewProj.M[0][0],
+        ViewProj.M[1][3] - ViewProj.M[1][0],
+        ViewProj.M[2][3] - ViewProj.M[2][0],
+        ViewProj.M[3][3] - ViewProj.M[3][0]
+    );
     // Top
-    Planes[4] = FPlane(ViewProj.M[0][3] - ViewProj.M[0][1], ViewProj.M[1][3] - ViewProj.M[1][1], ViewProj.M[2][3] - ViewProj.M[2][1], ViewProj.M[3][3] - ViewProj.M[3][1]);
+    Planes[4] = FPlane(
+        ViewProj.M[0][3] - ViewProj.M[0][1],
+        ViewProj.M[1][3] - ViewProj.M[1][1],
+        ViewProj.M[2][3] - ViewProj.M[2][1],
+        ViewProj.M[3][3] - ViewProj.M[3][1]
+    );
     // Bottom
-    Planes[5] = FPlane(ViewProj.M[0][3] + ViewProj.M[0][1], ViewProj.M[1][3] + ViewProj.M[1][1], ViewProj.M[2][3] + ViewProj.M[2][1], ViewProj.M[3][3] + ViewProj.M[3][1]);
+    Planes[5] = FPlane(
+        ViewProj.M[0][3] + ViewProj.M[0][1],
+        ViewProj.M[1][3] + ViewProj.M[1][1],
+        ViewProj.M[2][3] + ViewProj.M[2][1],
+        ViewProj.M[3][3] + ViewProj.M[3][1]
+    );
 
 
     for (int i = 0; i < 6; i++)
@@ -53,6 +83,16 @@ bool FCameraFrustum::IntersectMesh(const FBoundingBox& Box) const
         if (Plane.C >= 0)
             PositiveVertex.z = Box.max.z;
         if (Plane.DistanceTo(PositiveVertex) < 0)
+            return false;
+    }
+    return true;
+}
+
+bool FCameraFrustum::IntersectMesh(const FBoundingSphere& Sphere) const
+{
+    for (int i = 0; i < 6; ++i)
+    {
+        if (Planes[i].DistanceTo(Sphere.Center) < -Sphere.Radius)
             return false;
     }
     return true;
