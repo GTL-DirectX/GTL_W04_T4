@@ -119,9 +119,10 @@ FBoundingBox UPrimitiveComponent::GetWorldSpaceBoundingBox()
 
     FVector NewMin(FLT_MAX, FLT_MAX, FLT_MAX);
     FVector NewMax(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+    FVector worldCorner;
     for (int i = 0; i < 8; ++i)
     {
-        FVector worldCorner = WorldMatrix.TransformPosition(Corners[i]);
+        worldCorner = WorldMatrix.TransformPosition(Corners[i]);
         NewMin.x = FMath::Min(NewMin.x, worldCorner.x);
         NewMin.y = FMath::Min(NewMin.y, worldCorner.y);
         NewMin.z = FMath::Min(NewMin.z, worldCorner.z);
