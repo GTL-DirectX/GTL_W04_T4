@@ -2,24 +2,19 @@
 
 #include <DirectXMath.h>
 
-#define SIMD 1
-#define AVX 0
-
 // 4x4 행렬 연산
 union FMatrix
 {
 	float M[4][4];
-#ifdef SIMD
     __m128 Row[4];
-#elif AVX
-    __m256 Row256[2];   // TODO: M의 주소를 'reinterpret_cast<const float*>(Mat.M) + 8' 의 형태로 사용하면 필요 없음, __m128 Row[4] 또한 마찬가지
-#endif
+    __m256 Row256[2];   // TODO: M의 주소를 'reinterpret_cast<const float*>(Mat.M) + 8' 의 형태로 사용하면 필요 없음, __m128 Row[4] 또한 마찬가지 (하지만 변환에 드는 비용은???)
+
 	static const FMatrix Identity;
 	// 기본 연산자 오버로딩
 	FMatrix operator+(const FMatrix& Other) const;
 	FMatrix operator-(const FMatrix& Other) const;
 	FMatrix operator*(const FMatrix& Other) const;
-#ifdef SIMD
+#ifdef SSE
     __m128 MulVecMat(const __m128& Vector, const FMatrix& Matrix) const;
 #endif
 	FMatrix operator*(float Scalar) const;
@@ -37,7 +32,6 @@ union FMatrix
 	static FVector4 TransformVector(const FVector4& v, const FMatrix& m);
 	static FMatrix CreateTranslationMatrix(const FVector& position);
 
-#ifdef SIMD
     // 2x2 행렬
     static float Det2x2(__m128 Mat);
     static __m128 Inverse2x2(__m128 Mat);
@@ -45,7 +39,6 @@ union FMatrix
     static __m128 Mul2x2(__m128 LMat, __m128 RMat);
     static __m128 Sub2x2(__m128 LMat, __m128 RMat);
     static void Split4x4To2x2(const FMatrix& Mat, __m128& A, __m128& B, __m128& C, __m128& D);
-#endif
 
 	DirectX::XMMATRIX ToXMMATRIX() const
 	{
