@@ -166,8 +166,31 @@ void UPrimitiveBatch::RenderAABB(const FBoundingBox& localAABB, const FVector& c
     FBoundingBox BoundingBox;
     BoundingBox.min = min;
     BoundingBox.max = max;
-    BoundingBoxes.Add(BoundingBox);
+    // BoundingBoxes.Add(BoundingBox);
     BoundingBoxes.Add(GEngineLoop.GetWorld()->GetRootOctree()->Region);
+    Octree* ROctree = GEngineLoop.GetWorld()->GetRootOctree();
+    if (ROctree)
+    {
+        TArray<Octree*> NodesToVisit;
+        NodesToVisit.Add(ROctree);
+    
+        while (NodesToVisit.Num() > 0)
+        {
+            Octree* CurrentNode = NodesToVisit[0];
+            BoundingBoxes.Add(CurrentNode->Region);
+            NodesToVisit.Remove(CurrentNode);
+        
+            // 현재 노드의 자식들을 순회하여 스택에 추가
+            for (const auto& Child : CurrentNode->Children)
+            {
+                if (Child)  // nullptr 체크
+                {
+                    NodesToVisit.Add(Child.get());
+                }
+            }
+        }
+    }
+    
 }
 void UPrimitiveBatch::RenderOBB(const FBoundingBox& localAABB, const FVector& center, const FMatrix& modelMatrix)
 {
