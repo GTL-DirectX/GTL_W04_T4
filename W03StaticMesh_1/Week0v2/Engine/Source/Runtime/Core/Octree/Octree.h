@@ -29,6 +29,8 @@ public:
     // Ray 검사를 통해 검출된 액터를 반환합니다.
     void QueryTree(const FVector& RayOrigin, const FVector& RayDirection, TArray<AActor*>& OutActors);
 
+    void QueryTreeWithBounds(const FRay& Ray, const FBoundingBox& Bounds, TArray<AActor*>& OutActors);
+    
     // Tree를 초기화합니다.
     void ClearTree();
 

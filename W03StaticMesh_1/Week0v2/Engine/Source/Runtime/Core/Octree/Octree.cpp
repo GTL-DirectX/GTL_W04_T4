@@ -146,6 +146,42 @@ void Octree::QueryTree(const FVector& RayOrigin, const FVector& RayDirection, TA
     }
 }
 
+void Octree::QueryTreeWithBounds(const FRay& Ray, const FBoundingBox& Bounds, TArray<AActor*>& OutActors)
+{
+    float OutDistance = 0.0f;
+
+    // 1. 현재 노드의 느슨한 영역이 Ray와 교차하는지 확인
+    if (!GetLooseRegion().IntersectToRay(Ray.Origin, Ray.Direction, OutDistance))
+    {
+        return;
+    }
+
+    // 2. Bounds와 노드의 경계 상자가 교차하는지 확인
+    if (!Bounds.Intersect(GetLooseRegion()))
+    {
+        return;
+    }
+
+    // 3. 교차하는 경우에만 액터 추가
+    for (auto Actor : Actors)
+    {
+        // 액터의 경계 상자가 Bounds와 교차하는지 확인 (효율성을 위해 선택적)
+        if (Cast<UPrimitiveComponent>(Actor->GetRootComponent())->GetBoundingBox().Intersect(Bounds))
+        {
+            OutActors.Add(Actor);
+        }
+    }
+
+    // 4. 자식 노드 탐색
+    if (Children[0])
+    {
+        for (const auto& Child : Children)
+        {
+            Child->QueryTreeWithBounds(Ray, Bounds, OutActors);
+        }
+    }
+}
+
 void Octree::ClearTree()
 {
     Actors.Empty();
