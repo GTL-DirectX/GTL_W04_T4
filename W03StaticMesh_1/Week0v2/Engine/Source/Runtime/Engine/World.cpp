@@ -78,10 +78,10 @@ void UWorld::Tick(float DeltaTime)
     PendingBeginPlayActors.Empty();
 
     // 매 틱마다 Actor->Tick(...) 호출
-	for (AActor* Actor : ActorsArray)
-	{
-	    Actor->Tick(DeltaTime);
-	}
+	// for (AActor* Actor : ActorsArray)
+	// {
+	//     Actor->Tick(DeltaTime);
+	// }
 }
 
 void UWorld::Release()

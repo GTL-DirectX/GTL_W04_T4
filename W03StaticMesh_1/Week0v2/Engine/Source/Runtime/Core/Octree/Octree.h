@@ -42,16 +42,6 @@ private:
 
     FBoundingBox GetLooseRegion();
 
-    bool QuickRayAABBCheck(const FVector& RayOrigin, const FVector& RayDirection, const FBoundingBox& Box)
-    {
-        FVector InvDir = 1.0f / RayDirection; // 역방향 벡터
-        FVector TMin = (Box.min - RayOrigin) * InvDir;
-        FVector TMax = (Box.max - RayOrigin) * InvDir;
-        float tmin = std::max(std::max(std::min(TMin.x, TMax.x), std::min(TMin.y, TMax.y)), std::min(TMin.z, TMax.z));
-        float tmax = std::min(std::min(std::max(TMin.x, TMax.x), std::max(TMin.y, TMax.y)), std::max(TMin.z, TMax.z));
-        return tmin <= tmax && tmax >= 0;
-    }
-
 public:
     // 현재 노드가 담당하는 영역(직육면체)
     FBoundingBox Region;
@@ -72,7 +62,7 @@ public:
     static uint32 Capacity;
     
     // 최소 영역 크기: 영역이 이 크기보다 작으면 더 이상 분할하지 않음 (예: 1x1x1 큐브)
-    static constexpr float MinSize = 8.0f;
+    static constexpr float MinSize = 0.01f;
 
     // 트리에 삽입해야 할 객체들이 남아있어 트리가 완전하지 않음을 표시
     static bool bReadyTree;
