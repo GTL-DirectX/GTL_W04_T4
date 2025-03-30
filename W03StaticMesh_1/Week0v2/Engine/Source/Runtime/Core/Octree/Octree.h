@@ -26,7 +26,11 @@ public:
     // 현재까지의 객체들을 기반으로 트리를 구축합니다.
     void BuildTree();
 
+    // Ray 검사를 통해 검출된 액터를 반환합니다.
     void QueryTree(const FVector& RayOrigin, const FVector& RayDirection, TArray<AActor*>& OutActors);
+
+    // Tree를 초기화합니다.
+    void ClearTree();
 
 private:
     // 내부용 생성자: 특정 영역과 액터 목록(InActors)을 사용해 Octree를 초기화합니다.
@@ -34,6 +38,8 @@ private:
 
     int GetOctant(const FVector& Center, const FVector& HalfSize) const;
 
+    FBoundingBox GetLooseRegion();
+    
 public:
     // 현재 노드가 담당하는 영역(직육면체)
     FBoundingBox Region;
@@ -61,4 +67,9 @@ public:
 
     // 아직 구축된 트리가 없음을 표시 (최초 구축 여부)
     static bool bBuildTree;
+
+private:
+    FBoundingBox LooseRegion;
+
+    float LooseFactor = 2.0f;
 };

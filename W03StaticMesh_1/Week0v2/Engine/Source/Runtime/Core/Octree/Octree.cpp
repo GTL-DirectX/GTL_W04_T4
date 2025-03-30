@@ -5,7 +5,7 @@
 
 bool Octree::bReadyTree = false;
 bool Octree::bBuildTree = false;
-uint32 Octree::Capacity = 64;
+uint32 Octree::Capacity = 50;
 
 Octree::Octree() : Parent(nullptr), ActiveNodeMask(0)
 {
@@ -28,12 +28,27 @@ int Octree::GetOctant(const FVector& Center, const FVector& HalfSize) const
     return Octant;
 }
 
+FBoundingBox Octree::GetLooseRegion()
+{
+    if (LooseRegion.Size() != 0)
+    {
+        return LooseRegion;
+    }
+    
+    FVector Center = (Region.min + Region.max) * 0.5f;
+    FVector HalfSize = (Region.max - Region.min) * 0.5f;
+    FVector LooseHalfSize = HalfSize * LooseFactor;
+    LooseRegion = FBoundingBox(Center - LooseHalfSize, Center + LooseHalfSize);
+
+    return LooseRegion;
+}
+
 void Octree::Insert(AActor* Actor)
 {
     FBoundingBox ActorBoundingBox = Cast<UPrimitiveComponent>(Actor->GetRootComponent())->GetWorldSpaceBoundingBox();
     
     // 현재 Actor의 바운딩 박스가 영역에 포함되는지 확인
-    if (!Region.Contains(ActorBoundingBox))
+    if (!GetLooseRegion().IntersectToRay(ActorBoundingBox.min, ActorBoundingBox.max, *(new float)))
     {
         return;
     }
@@ -111,7 +126,8 @@ void Octree::QueryTree(const FVector& RayOrigin, const FVector& RayDirection, TA
 {
     float OutDistance = 0.0f;
 
-    if (!Region.Intersect(RayOrigin, RayDirection, OutDistance))
+    
+    if (!GetLooseRegion().IntersectToRay(RayOrigin, RayDirection, OutDistance))
     {
         return;
     }
@@ -128,4 +144,20 @@ void Octree::QueryTree(const FVector& RayOrigin, const FVector& RayDirection, TA
             Child->QueryTree(RayOrigin, RayDirection, OutActors);
         }
     }
+}
+
+void Octree::ClearTree()
+{
+    Actors.Empty();
+
+    for (auto& Child : Children)
+    {
+        if (Child)
+        {
+            Child->ClearTree();
+            Child.reset();
+        }
+    }
+
+    ActiveNodeMask = 0;
 }
