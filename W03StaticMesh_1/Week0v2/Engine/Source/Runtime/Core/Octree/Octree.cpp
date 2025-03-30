@@ -5,7 +5,7 @@
 
 bool Octree::bReadyTree = false;
 bool Octree::bBuildTree = false;
-uint32 Octree::Capacity = 50;
+uint32 Octree::Capacity = 64;
 
 Octree::Octree() : Parent(nullptr), ActiveNodeMask(0)
 {
@@ -125,24 +125,32 @@ void Octree::BuildTree()
 void Octree::QueryTree(const FVector& RayOrigin, const FVector& RayDirection, TArray<AActor*>& OutActors)
 {
     float OutDistance = 0.0f;
-
     
     if (!GetLooseRegion().IntersectToRay(RayOrigin, RayDirection, OutDistance))
     {
         return;
     }
     
-    for (auto Actor : Actors)
+    // 2. Leaf 노드라면 액터 추가
+    if (!Children[0]) // 자식이 없으면 Leaf 노드
     {
-        OutActors.Add(Actor);
+        for (auto Actor : Actors)
+        {
+            OutActors.Add(Actor);
+        }
+        return;
     }
 
-    if (Children[0])
+    // 3. 중간 노드: 자식 노드로 내려가기 전에 추가 필터링
+    for (const auto& Child : Children)
     {
-        for (const auto& Child : Children)
+        // 자식 노드의 느슨한 영역과 Ray 교차 확인
+        if (Child->GetLooseRegion().IntersectToRay(RayOrigin, RayDirection, OutDistance))
         {
+            // 교차하면 자식 노드 탐색
             Child->QueryTree(RayOrigin, RayDirection, OutActors);
         }
+        // 교차하지 않으면 이 자식 노드와 그 하위는 탐색 생략
     }
 }
 
