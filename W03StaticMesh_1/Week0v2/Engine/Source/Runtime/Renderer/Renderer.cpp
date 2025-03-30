@@ -1222,7 +1222,7 @@ void FRenderer::FrustumCulling(std::shared_ptr<FEditorViewportClient> ActiveView
 {
     TArray<UStaticMeshComponent*> NewStaticMeshObjs;
 
-    std::clock_t start = std::clock();
+    //std::clock_t start = std::clock();
     for (UStaticMeshComponent* StaticMesh : StaticMeshObjs)
     {
         if (!StaticMesh)
@@ -1242,7 +1242,7 @@ void FRenderer::FrustumCulling(std::shared_ptr<FEditorViewportClient> ActiveView
 
     }
 
-    UE_LOG(LogLevel::Display, "FrustumCulling : %f", (std::clock() - start) / (double)CLOCKS_PER_SEC);
+    //UE_LOG(LogLevel::Display, "FrustumCulling : %f", (std::clock() - start) / (double)CLOCKS_PER_SEC);
 
     //UE_LOG(LogLevel::Display, "FrustumCulling : %d -> %d", StaticMeshObjs.Num(), NewStaticMeshObjs.Num());
     StaticMeshObjs = NewStaticMeshObjs;

@@ -1,6 +1,6 @@
 #include "Define.h"
-#define SIMD 1
 #define AVX 0
+#define SSE 1
 
 // 단위 행렬 정의
 const FMatrix FMatrix::Identity = { {
@@ -11,92 +11,133 @@ const FMatrix FMatrix::Identity = { {
 } };
 
 // 행렬 덧셈
-FMatrix FMatrix::operator+(const FMatrix& Other) const {
+FMatrix FMatrix::operator+(const FMatrix& Other) const
+{
     FMatrix Result;
+#if AVX
+    Result.Row256[0] = _mm256_add_ps(Row256[0], Other.Row256[0]);
+    Result.Row256[1] = _mm256_add_ps(Row256[1], Other.Row256[1]);
+#elif SSE
+    Result.Row[0] = _mm_add_ps(Row[0], Other.Row[0]);
+    Result.Row[1] = _mm_add_ps(Row[1], Other.Row[1]);
+    Result.Row[2] = _mm_add_ps(Row[2], Other.Row[2]);
+    Result.Row[3] = _mm_add_ps(Row[3], Other.Row[3]);
+#else
     for (int32 i = 0; i < 4; i++)
     {
-#if SIMD
-        Result.Row[i] = _mm_add_ps(Row[i], Other.Row[i]);
-#else
         for (int32 j = 0; j < 4; j++)
             Result.M[i][j] = M[i][j] + Other.M[i][j];
-#endif
     }
+#endif
     return Result;
 }
 
 // 행렬 뺄셈
-FMatrix FMatrix::operator-(const FMatrix& Other) const {
-    FMatrix Result;
-    for (int32 i = 0; i < 4; i++)
-    {
-#if SIMD
-        Result.Row[i] = _mm_sub_ps(Row[i], Other.Row[i]);
+FMatrix FMatrix::operator-(const FMatrix& Other) const
+{
+        FMatrix Result;
+#if AVX
+        Result.Row256[0] = _mm256_sub_ps(Row256[0], Other.Row256[0]);
+        Result.Row256[1] = _mm256_sub_ps(Row256[1], Other.Row256[1]);
+#elif SSE
+        Result.Row[0] = _mm_sub_ps(Row[0], Other.Row[0]);
+        Result.Row[1] = _mm_sub_ps(Row[1], Other.Row[1]);
+        Result.Row[2] = _mm_sub_ps(Row[2], Other.Row[2]);
+        Result.Row[3] = _mm_sub_ps(Row[3], Other.Row[3]);
 #else
-        for (int32 j = 0; j < 4; j++)
-            Result.M[i][j] = M[i][j] - Other.M[i][j];
+        for (int32 i = 0; i < 4; i++)
+        {
+            for (int32 j = 0; j < 4; j++)
+                Result.M[i][j] = M[i][j] - Other.M[i][j];
+        }
 #endif
+        return Result;
     }
-    return Result;
-}
 
 // 행렬 곱셈
-FMatrix FMatrix::operator*(const FMatrix& Other) const {
+FMatrix FMatrix::operator*(const FMatrix& Other) const
+{
     FMatrix Result = {};
+#if AVX
+    const __m256 T0 = Row256[0];                                            // t0 = a00, a01, a02, a03, a10, a11, a12, a13
+    const __m256 T1 = Row256[1];                                            // t1 = a20, a21, a22, a23, a30, a31, a32, a33
+    const __m256 U0 = Other.Row256[0];                                      // u0 = b00, b01, b02, b03, b10, b11, b12, b13
+    const __m256 U1 = Other.Row256[1];                                      // u1 = b20, b21, b22, b23, b30, b31, b32, b33
+
+    __m256 A0 = _mm256_shuffle_ps(T0, T0, _MM_SHUFFLE(0, 0, 0, 0));         // a0 = a00, a00, a00, a00, a10, a10, a10, a10
+    __m256 A1 = _mm256_shuffle_ps(T1, T1, _MM_SHUFFLE(0, 0, 0, 0));         // a1 = a20, a20, a20, a20, a30, a30, a30, a30
+    __m256 B0 = _mm256_permute2f128_ps(U0, U0, 0x00);                       // b0 = b00, b01, b02, b03, b00, b01, b02, b03  
+    __m256 C0 = _mm256_mul_ps(A0, B0);                                      // c0 = a00*b00  a00*b01  a00*b02  a00*b03  a10*b00  a10*b01  a10*b02  a10*b03
+    __m256 C1 = _mm256_mul_ps(A1, B0);                                      // c1 = a20*b00  a20*b01  a20*b02  a20*b03  a30*b00  a30*b01  a30*b02  a30*b03
+
+    A0 = _mm256_shuffle_ps(T0, T0, _MM_SHUFFLE(1, 1, 1, 1));                // a0 = a01, a01, a01, a01, a11, a11, a11, a11
+    A1 = _mm256_shuffle_ps(T1, T1, _MM_SHUFFLE(1, 1, 1, 1));                // a1 = a21, a21, a21, a21, a31, a31, a31, a31
+    B0 = _mm256_permute2f128_ps(U0, U0, 0x11);                              // b0 = b10, b11, b12, b13, b10, b11, b12, b13
+    const __m256 C2 = _mm256_mul_ps(A0, B0);                                // c2 = a01*b10  a01*b11  a01*b12  a01*b13  a11*b10  a11*b11  a11*b12  a11*b13
+    const __m256 C3 = _mm256_mul_ps(A1, B0);                                // c3 = a21*b10  a21*b11  a21*b12  a21*b13  a31*b10  a31*b11  a31*b12  a31*b13
+
+    A0 = _mm256_shuffle_ps(T0, T0, _MM_SHUFFLE(2, 2, 2, 2));                // a0 = a02, a02, a02, a02, a12, a12, a12, a12
+    A1 = _mm256_shuffle_ps(T1, T1, _MM_SHUFFLE(2, 2, 2, 2));                // a1 = a22, a22, a22, a22, a32, a32, a32, a32
+    __m256 B1 = _mm256_permute2f128_ps(U1, U1, 0x00);                       // b0 = b20, b21, b22, b23, b20, b21, b22, b23
+    __m256 C4 = _mm256_mul_ps(A0, B1);                                      // c4 = a02*b20  a02*b21  a02*b22  a02*b23  a12*b20  a12*b21  a12*b22  a12*b23
+    __m256 C5 = _mm256_mul_ps(A1, B1);                                      // c5 = a22*b20  a22*b21  a22*b22  a22*b23  a32*b20  a32*b21  a32*b22  a32*b23
+
+    A0 = _mm256_shuffle_ps(T0, T0, _MM_SHUFFLE(3, 3, 3, 3));                // a0 = a03, a03, a03, a03, a13, a13, a13, a13
+    A1 = _mm256_shuffle_ps(T1, T1, _MM_SHUFFLE(3, 3, 3, 3));                // a1 = a23, a23, a23, a23, a33, a33, a33, a33
+    B1 = _mm256_permute2f128_ps(U1, U1, 0x11);                              // b0 = b30, b31, b32, b33, b30, b31, b32, b33
+    const __m256 C6 = _mm256_mul_ps(A0, B1);                                // c6 = a03*b30  a03*b31  a03*b32  a03*b33  a13*b30  a13*b31  a13*b32  a13*b33
+    const __m256 C7 = _mm256_mul_ps(A1, B1);                                // c7 = a23*b30  a23*b31  a23*b32  a23*b33  a33*b30  a33*b31  a33*b32  a33*b33
+
+    C0 = _mm256_add_ps(C0, C2);                                             // c0 = c0 + c2 (two terms, first two rows)
+    C4 = _mm256_add_ps(C4, C6);                                             // c4 = c4 + c6 (the other two terms, first two rows)
+    C1 = _mm256_add_ps(C1, C3);                                             // c1 = c1 + c3 (two terms, second two rows)
+    C5 = _mm256_add_ps(C5, C7);                                             // c5 = c5 + c7 (the other two terms, second two rose)
+
+    // Finally complete addition of all four terms and return the results
+    Result.Row256[0] = _mm256_add_ps(C0, C4);   // n0 = a00*b00+a01*b10+a02*b20+a03*b30  a00*b01+a01*b11+a02*b21+a03*b31  a00*b02+a01*b12+a02*b22+a03*b32  a00*b03+a01*b13+a02*b23+a03*b33
+                                                //      a10*b00+a11*b10+a12*b20+a13*b30  a10*b01+a11*b11+a12*b21+a13*b31  a10*b02+a11*b12+a12*b22+a13*b32  a10*b03+a11*b13+a12*b23+a13*b33
+    Result.Row256[1] = _mm256_add_ps(C1, C5);   // n1 = a20*b00+a21*b10+a22*b20+a23*b30  a20*b01+a21*b11+a22*b21+a23*b31  a20*b02+a21*b12+a22*b22+a23*b32  a20*b03+a21*b13+a22*b23+a23*b33
+                                                //      a30*b00+a31*b10+a32*b20+a33*b30  a30*b01+a31*b11+a32*b21+a33*b31  a30*b02+a31*b12+a32*b22+a33*b32  a30*b03+a31*b13+a32*b23+a33*b33
+#elif SSE
     for (int32 i = 0; i < 4; i++)
     {
-#if SIMD
         __m128 R = Row[i];
         __m128 R0 = _mm_mul_ps(_mm_shuffle_ps(R, R, 0x00), Other.Row[0]);
         __m128 R1 = _mm_mul_ps(_mm_shuffle_ps(R, R, 0x55), Other.Row[1]);
         __m128 R2 = _mm_mul_ps(_mm_shuffle_ps(R, R, 0xAA), Other.Row[2]);
         __m128 R3 = _mm_mul_ps(_mm_shuffle_ps(R, R, 0xFF), Other.Row[3]);
         Result.Row[i] = _mm_add_ps(_mm_add_ps(R0, R1), _mm_add_ps(R2, R3));
+    }
 #else
+    for (int32 i = 0; i < 4; i++)
+    {
         for (int32 j = 0; j < 4; j++)
             for (int32 k = 0; k < 4; k++)
                 Result.M[i][j] += M[i][k] * Other.M[k][j];
-#endif
     }
+#endif
     return Result;
-
-    //FMatrix R;
-    //
-    //// B를 column 단위로 분해
-    //__m128 B0 = Other.Row[0];
-    //__m128 B1 = Other.Row[1];
-    //__m128 B2 = Other.Row[2];
-    //__m128 B3 = Other.Row[3];
-    //
-    //// A의 Row들과 B의 columns 내적
-    //for (int i = 0; i < 4; ++i) {
-    //    __m128 r = Row[i];
-    //    R.Row[i] = _mm_add_ps(
-    //        _mm_add_ps(
-    //            _mm_mul_ps(_mm_shuffle_ps(r, r, _MM_SHUFFLE(0, 0, 0, 0)), B0),
-    //            _mm_mul_ps(_mm_shuffle_ps(r, r, _MM_SHUFFLE(1, 1, 1, 1)), B1)
-    //        ),
-    //        _mm_add_ps(
-    //            _mm_mul_ps(_mm_shuffle_ps(r, r, _MM_SHUFFLE(2, 2, 2, 2)), B2),
-    //            _mm_mul_ps(_mm_shuffle_ps(r, r, _MM_SHUFFLE(3, 3, 3, 3)), B3)
-    //        )
-    //    );
-    //}
-    //return R;
 }
 
 // 스칼라 곱셈
 FMatrix FMatrix::operator*(float Scalar) const {
     FMatrix Result;
+#if AVX
+    const __m256 S = _mm256_set1_ps(Scalar);
+    Result.Row256[0] = _mm256_mul_ps(Row256[0], S);
+    Result.Row256[1] = _mm256_mul_ps(Row256[1], S);
+#elif SSE
     for (int32 i = 0; i < 4; i++)
     {
-#if SIMD
         Result.Row[i] = _mm_mul_ps(Row[i], _mm_set1_ps(Scalar));
+    }
 #else
+    for (int32 i = 0; i < 4; i++)
+    {
         for (int32 j = 0; j < 4; j++)
             Result.M[i][j] = M[i][j] * Scalar;
-#endif
     }
+#endif
     return Result;
 }
 
@@ -104,15 +145,22 @@ FMatrix FMatrix::operator*(float Scalar) const {
 FMatrix FMatrix::operator/(float Scalar) const {
     assert(Scalar != 0.f);
     FMatrix Result;
+#if AVX
+    const __m256 S = _mm256_set1_ps(Scalar);
+    Result.Row256[0] = _mm256_div_ps(Row256[0], S);
+    Result.Row256[1] = _mm256_div_ps(Row256[1], S);
+#elif SSE
     for (int32 i = 0; i < 4; i++)
     {
-#if SIMD
         Result.Row[i] = _mm_div_ps(Row[i], _mm_set1_ps(Scalar));
+    }
 #else
+    for (int32 i = 0; i < 4; i++)
+    {
         for (int32 j = 0; j < 4; j++)
             Result.M[i][j] = M[i][j] / Scalar;
-#endif
     }
+#endif
     return Result;
 }
 
@@ -128,7 +176,8 @@ const float* FMatrix::operator[](int Row) const
 // 전치 행렬
 FMatrix FMatrix::Transpose(const FMatrix& Mat) {
     FMatrix Result;
-#if SIMD
+    //TODO: Transpose using AVX
+#if SSE or AVX
     // x,x x,y x,z x,w
     // y,x y,y y,z y,w
     // z,x z,y z,z z,w
@@ -149,24 +198,6 @@ FMatrix FMatrix::Transpose(const FMatrix& Mat) {
     Result.Row[1] = _mm_shuffle_ps(TempRow0, TempRow2, 0xDD); // 0xDD = 0b11 01 11 01 (3, 1, 3, 1)
     Result.Row[2] = _mm_shuffle_ps(TempRow1, TempRow3, 0x88); // 0x88 = 0b10 00 10 00 (2, 0, 2, 0)
     Result.Row[3] = _mm_shuffle_ps(TempRow1, TempRow3, 0xDD); // 0xDD = 0b11 01 11 01 (3, 1, 3, 1)
-#elif AVX
-    __m256 ymm2 = _mm256_loadu_ps(reinterpret_cast<const float*>(Mat.M));          // ymm2 = { x0, y0, z0, w0, x1, y1, z1, w1 }
-    __m256 ymm3 = _mm256_loadu_ps(reinterpret_cast<const float*>(Mat.M) + 8);      // ymm3 = { x2, y2, z2, w2, x3, y3, z3, w3 }
-    __m256 ymm0 = _mm256_permute2f128_ps(ymm2, ymm3, 0x20);                      // ymm0 = { x0, y0, z0, w0, x2, y2, z2, w2 }
-    __m256 ymm1 = _mm256_permute2f128_ps(ymm2, ymm3, 0x31);                      // ymm1 = { x1, y1, z1, w1, x3, y3, z3, w3 }
-
-    // shuffle to each ymm contain the x, z or y, w elements of every row
-    ymm2 = _mm256_shuffle_ps(ymm0, ymm1, 0x88);                                  // ymm2 = { x0, z0, x1, z1, x2, z2, x3, z3 }
-    ymm3 = _mm256_shuffle_ps(ymm0, ymm1, 0xDD);                                  // ymm3 = { y0, w0, y1, w1, y2, w2, y3, w3 }
-
-    __m256 ymm4 = _mm256_insertf128_ps(ymm2, _mm256_castps256_ps128(ymm3), 1);   // ymm4 = { x0, z0, x1, z1, y0, w0, y1, w1 }
-    __m256 ymm5 = _mm256_permute2f128_ps(ymm2, ymm3, 0x31);                      // ymm5 = { x2, z2, x3, z3, y2, w2, y3, w3 }
-
-    __m256 ymm6 = _mm256_shuffle_ps(ymm4, ymm5, 0x88);                           // ymm6 = { x0, x1, x2, x3, y0, y1, y2, y3 }
-    __m256 ymm7 = _mm256_shuffle_ps(ymm4, ymm5, 0xDD);                           // ymm7 = { z0, z1, z2, z3, w0, w1, w2, w3 }
-
-    _mm256_storeu_ps(reinterpret_cast<float*>(Result.M), ymm6);
-    _mm256_storeu_ps(reinterpret_cast<float*>(Result.M) + 8, ymm7);
 #else
     for (int32 i = 0; i < 4; i++)
         for (int32 j = 0; j < 4; j++)
@@ -178,7 +209,7 @@ FMatrix FMatrix::Transpose(const FMatrix& Mat) {
 // 행렬식 계산 (라플라스 전개, 4x4 행렬)
 float FMatrix::Determinant(const FMatrix& Mat)
 {
-#if SIMD
+#if SSE or AVX
     /**
          * M = [ A B ] (A, B, C, D는 2x2 행렬)
          *     [ C D ]
@@ -231,7 +262,183 @@ float FMatrix::Determinant(const FMatrix& Mat)
 }
 
 FMatrix FMatrix::Inverse(const FMatrix& Mat) {
-#if SIMD
+#if AVX
+    // https://gist.github.com/recp/8ccc5ad0d19f5516de55f9bf7b5045b2
+    __m256  Y0, Y1, Y2, Y3, Y4, Y5, Y6, Y7, Y8, Y9, Y10, Y11, Y12, Y13;
+    __m256  Yt0, Yt1, Yt2;
+    __m256  T0, T1, T2;
+    __m256  R1, R2;
+    __m256  Flpsign;
+    __m256i Yi1, Yi2, Yi3;
+
+    Y0 = Mat.Row256[0]; /* h g f e d c b a */
+    Y1 = Mat.Row256[1]; /* p o n m l k j i */
+
+    Y2 = _mm256_permute2f128_ps(Y1, Y1, 0x00); /* l k j i l k j i */
+    Y3 = _mm256_permute2f128_ps(Y1, Y1, 0x11); /* p o n m p o n m */
+    Y4 = _mm256_permute2f128_ps(Y0, Y0, 0x03); /* d c b a h g f e */
+    Y13 = _mm256_permute2f128_ps(Y4, Y4, 0x00); /* h g f e h g f e */
+
+    Yi1 = _mm256_set_epi32(0, 0, 0, 0, 0, 1, 1, 2);
+    Yi2 = _mm256_set_epi32(1, 1, 1, 2, 3, 2, 3, 3);
+    Flpsign = _mm256_set_ps(0.f, -0.f, 0.f, -0.f, -0.f, 0.f, -0.f, 0.f);
+
+    /* i i i i i j j k */
+    /* n n n o p o p p */
+    /* m m m m m n n o */
+    /* j j j k l k l l */
+    /* e e e e e f f g */
+    /* f f f g h g h h */
+    Y5 = _mm256_permutevar_ps(Y2, Yi1);
+    Y6 = _mm256_permutevar_ps(Y3, Yi2);
+    Y7 = _mm256_permutevar_ps(Y3, Yi1);
+    Y8 = _mm256_permutevar_ps(Y2, Yi2);
+    Y2 = _mm256_permutevar_ps(Y13, Yi1);
+    Y3 = _mm256_permutevar_ps(Y13, Yi2);
+
+    Yi1 = _mm256_set_epi32(2, 1, 0, 0, 2, 1, 0, 0);
+    Yi2 = _mm256_set_epi32(2, 1, 1, 0, 2, 1, 1, 0);
+    Yi3 = _mm256_set_epi32(3, 3, 2, 0, 3, 3, 2, 0);
+
+    /*
+     t0[0] = k * p - o * l;    t1[0] = g * p - o * h;    t2[0] = g * l - k * h;
+     t0[1] = j * p - n * l;    t1[1] = f * p - n * h;    t2[1] = f * l - j * h;
+     t0[2] = j * o - n * k;    t1[2] = f * o - n * g;    t2[2] = f * k - j * g;
+     t0[3] = i * p - m * l;    t1[3] = e * p - m * h;    t2[3] = e * l - i * h;
+     t0[4] = i * o - m * k;    t1[4] = e * o - m * g;    t2[4] = e * k - i * g;
+     t0[5] = i * n - m * j;    t1[5] = e * n - m * f;    t2[5] = e * j - i * f;
+     */
+    Yt0 = _mm256_sub_ps(_mm256_mul_ps(Y5, Y6), _mm256_mul_ps(Y7, Y8));
+    Yt1 = _mm256_sub_ps(_mm256_mul_ps(Y2, Y6), _mm256_mul_ps(Y7, Y3));
+    Yt2 = _mm256_sub_ps(_mm256_mul_ps(Y2, Y8), _mm256_mul_ps(Y5, Y3));
+
+    /* t3 t2 t1 t0 t3 t2 t1 t0 */
+    /* t5 t5 t5 t4 t5 t5 t5 t4 */
+    Y9 = _mm256_permute2f128_ps(Yt0, Yt0, 0x00);
+    Y10 = _mm256_permute2f128_ps(Yt0, Yt0, 0x11);
+
+    /* t2 t1 t0 t0 t2 t1 t0 t0 */
+    T0 = _mm256_permutevar_ps(Y9, Yi1);
+
+    /* t4 t3 t3 t1 t4 t3 t3 t1 */
+    Y11 = _mm256_shuffle_ps(Y9, Y10, 0x4D);
+    Y12 = _mm256_permutevar_ps(Y11, Yi2);
+    T1 = _mm256_permute2f128_ps(Y12, Y9, 0x00);
+
+    /* t5 t5 t4 t2 t5 t5 t4 t2 */
+    Y11 = _mm256_shuffle_ps(Y9, Y10, 0x4A);
+    Y12 = _mm256_permutevar_ps(Y11, Yi3);
+    T2 = _mm256_permute2f128_ps(Y12, Y12, 0x00);
+
+    /* a a a b e e e f */
+    /* b b c c f f g g */
+    /* c d d d g h h h */
+    Y9 = _mm256_permute_ps(Y4, 0x01);
+    Y10 = _mm256_permute_ps(Y4, 0x5A);
+    Y11 = _mm256_permute_ps(Y4, 0xBF);
+
+    /*
+     dest[0][0] =  f * t[0] - g * t[1] + h * t[2];
+     dest[1][0] =-(e * t[0] - g * t[3] + h * t[4]);
+     dest[2][0] =  e * t[1] - f * t[3] + h * t[5];
+     dest[3][0] =-(e * t[2] - f * t[4] + g * t[5]);
+     dest[0][1] =-(b * t[0] - c * t[1] + d * t[2]);
+     dest[1][1] =  a * t[0] - c * t[3] + d * t[4];
+     dest[2][1] =-(a * t[1] - b * t[3] + d * t[5]);
+     dest[3][1] =  a * t[2] - b * t[4] + c * t[5];
+     */
+    R1 = _mm256_xor_ps(_mm256_add_ps(_mm256_sub_ps(_mm256_mul_ps(Y9, T0),
+        _mm256_mul_ps(Y10, T1)),
+        _mm256_mul_ps(Y11, T2)),
+        Flpsign);
+
+    /* d c b a d c b a */
+    Y2 = _mm256_permute2f128_ps(Y0, Y0, 0x0);
+
+    /* a a a b a a a b */
+    /* b b c c b b c c */
+    /* c d d d c d d d */
+    Y3 = _mm256_permutevar_ps(Y2, _mm256_set_epi32(0, 0, 0, 1, 0, 0, 0, 1));
+    Y4 = _mm256_permutevar_ps(Y2, _mm256_set_epi32(1, 1, 2, 2, 1, 1, 2, 2));
+    Y5 = _mm256_permutevar_ps(Y2, _mm256_set_epi32(2, 3, 3, 3, 2, 3, 3, 3));
+
+    /* t2[3] t2[2] t2[1] t2[0] t1[3] t1[2] t1[1] t1[0] */
+    /* t2[5] t2[5] t2[5] t2[4] t1[5] t1[5] t1[5] t1[4] */
+    Y6 = _mm256_permute2f128_ps(Yt1, Yt2, 0x20);
+    Y7 = _mm256_permute2f128_ps(Yt1, Yt2, 0x31);
+
+    /* t2[2] t2[1] t2[0] t2[0] t1[2] t1[1] t1[0] t1[0] */
+    T0 = _mm256_permutevar_ps(Y6, Yi1);
+
+    /* t1[4] t1[3] t1[3] t1[1] t1[4] t1[3] t1[3] t1[1] */
+
+    /* t1[4] t1[3] t1[3] t1[1] t1[4] t1[3] t1[3] t1[1] */
+    Y11 = _mm256_shuffle_ps(Y6, Y7, 0x4D);
+    T1 = _mm256_permutevar_ps(Y11, Yi2);
+
+
+    /* t2[5] t2[5] t2[4] t2[2] t1[5] t1[5] t1[4] t1[2] */
+    Y11 = _mm256_shuffle_ps(Y6, Y7, 0x4A);
+    T2 = _mm256_permutevar_ps(Y11, Yi3);
+
+    /*
+     dest[0][2] =  b * t1[0] - c * t1[1] + d * t1[2];
+     dest[1][2] =-(a * t1[0] - c * t1[3] + d * t1[4]);
+     dest[2][2] =  a * t1[1] - b * t1[3] + d * t1[5];
+     dest[3][2] =-(a * t1[2] - b * t1[4] + c * t1[5]);
+     dest[0][3] =-(b * t2[0] - c * t2[1] + d * t2[2]);
+     dest[1][3] =  a * t2[0] - c * t2[3] + d * t2[4];
+     dest[2][3] =-(a * t2[1] - b * t2[3] + d * t2[5]);
+     dest[3][3] =  a * t2[2] - b * t2[4] + c * t2[5];
+     */
+    R2 = _mm256_xor_ps(_mm256_add_ps(_mm256_sub_ps(_mm256_mul_ps(Y3, T0),
+        _mm256_mul_ps(Y4, T1)),
+        _mm256_mul_ps(Y5, T2)),
+        Flpsign);
+
+    /* determinant */
+
+    Y4 = _mm256_dp_ps(Y0, R1, 0xff);
+    Y4 = _mm256_permute2f128_ps(Y4, Y4, 0x00);
+
+    Y5 = _mm256_div_ps(_mm256_set1_ps(1.0f), Y4);
+    R1 = _mm256_mul_ps(R1, Y5);
+    R2 = _mm256_mul_ps(R2, Y5);
+
+    /* transpose */
+
+    /* d c b a h g f e */
+    /* l k j i p o n m */
+    Y0 = _mm256_permute2f128_ps(R1, R1, 0x03);
+    Y1 = _mm256_permute2f128_ps(R2, R2, 0x03);
+
+    /* b a f e f e b a */
+    /* j i n m n m j i */
+    /* i m a e m i e a */
+    /* j n b f n j f b */
+    /* n j f b m i e a */
+    Y2 = _mm256_shuffle_ps(R1, Y0, 0x44);
+    Y3 = _mm256_shuffle_ps(R2, Y1, 0x44);
+    Y4 = _mm256_shuffle_ps(Y2, Y3, 0x88);
+    Y5 = _mm256_shuffle_ps(Y2, Y3, 0xDD);
+    Y6 = _mm256_permute2f128_ps(Y4, Y5, 0x20);
+
+    /* d c h g h g d c */
+    /* l k p o p o l k */
+    /* k o c g o k g c */
+    /* l p d h p l h d */
+    /* p l h d o k g c */
+    Y2 = _mm256_shuffle_ps(R1, Y0, 0xEE);
+    Y3 = _mm256_shuffle_ps(R2, Y1, 0xEE);
+    Y4 = _mm256_shuffle_ps(Y2, Y3, 0x88);
+    Y5 = _mm256_shuffle_ps(Y2, Y3, 0xDD);
+    Y7 = _mm256_permute2f128_ps(Y4, Y5, 0x20);
+
+    FMatrix mResult;
+    mResult.Row256[0] = Y6;
+    mResult.Row256[1] = Y7;
+    return mResult;
+#elif SSE
     // Cramer's Rule
     // https://github.com/microsoft/DirectXMath/blob/main/Inc/DirectXMathMatrix.inl
 
@@ -446,7 +653,7 @@ FMatrix FMatrix::CreateScale(float scaleX, float scaleY, float scaleZ)
 FMatrix FMatrix::CreateTranslationMatrix(const FVector& position)
 {
     FMatrix translationMatrix = FMatrix::Identity;
-#if SIMD
+#if SSE
     // Identity이므로 M[3][3] = 1
     translationMatrix.Row[3] = _mm_set_ps(1.0f, position.z, position.y, position.x);
 #else
@@ -457,7 +664,7 @@ FMatrix FMatrix::CreateTranslationMatrix(const FVector& position)
     return translationMatrix;
 }
 
-#if SIMD
+#if SSE
 float FMatrix::Det2x2(__m128 Mat)
 {
     // Mat = [a, b, c, d]
@@ -554,7 +761,14 @@ void FMatrix::Split4x4To2x2(const FMatrix& Mat, __m128& A, __m128& B, __m128& C,
 FVector FMatrix::TransformVector(const FVector& Vec, const FMatrix& Mat)
 {
     FVector Result;
-#if SIMD
+#if AVX //@TODO: TransformVector(FVector) - SSE와 차이가 없음. 개선 방안
+    __m256 V0 = _mm256_set_m128(_mm_set1_ps(Vec.y), _mm_set1_ps(Vec.x));
+    __m256 V1 = _mm256_set_m128(_mm_setzero_ps(), _mm_set1_ps(Vec.z));
+
+    __m256 R = _mm256_add_ps(_mm256_mul_ps(V0, Mat.Row256[0]), _mm256_mul_ps(V1, Mat.Row256[1]));
+
+    _mm_storeu_ps(reinterpret_cast<float*>(&Result), _mm_add_ps(_mm256_castps256_ps128(R), _mm256_extractf128_ps(R, 1)));
+#elif SSE
     __m128 VX = _mm_set_ps1(Vec.x);
     __m128 VY = _mm_set_ps1(Vec.y);
     __m128 VZ = _mm_set_ps1(Vec.z);
@@ -563,12 +777,18 @@ FVector FMatrix::TransformVector(const FVector& Vec, const FMatrix& Mat)
     R = _mm_add_ps(R, _mm_mul_ps(VY, Mat.Row[1]));
     R = _mm_add_ps(R, _mm_mul_ps(VZ, Mat.Row[2]));
 
-    _mm_storeu_ps(reinterpret_cast<float*>(&Result), R);
+    //@Note: Vector는 float[3]이므로 reinterpret_cast를 통해 __m128을 변환 시 메모리 침식이 일어남
+    //_mm_storeu_ps(reinterpret_cast<float*>(&Result), R);
+    _mm_store_ss(&Result.x, R);
+    R = _mm_shuffle_ps(R, R, _MM_SHUFFLE(0, 3, 2, 1));
+    _mm_store_ss(&Result.y, R);
+    R = _mm_shuffle_ps(R, R, _MM_SHUFFLE(0, 3, 2, 1));
+    _mm_store_ss(&Result.z, R);
 #else
     // 4x4 행렬을 사용하여 벡터 변환 (W = 0으로 가정, 방향 벡터)
-    result.x = Vec.x * Mat.M[0][0] + Vec.y * Mat.M[1][0] + Vec.z * Mat.M[2][0] + 0.0f * Mat.M[3][0];
-    result.y = Vec.x * Mat.M[0][1] + Vec.y * Mat.M[1][1] + Vec.z * Mat.M[2][1] + 0.0f * Mat.M[3][1];
-    result.z = Vec.x * Mat.M[0][2] + Vec.y * Mat.M[1][2] + Vec.z * Mat.M[2][2] + 0.0f * Mat.M[3][2];
+    Result.x = Vec.x * Mat.M[0][0] + Vec.y * Mat.M[1][0] + Vec.z * Mat.M[2][0] + 0.0f * Mat.M[3][0];
+    Result.y = Vec.x * Mat.M[0][1] + Vec.y * Mat.M[1][1] + Vec.z * Mat.M[2][1] + 0.0f * Mat.M[3][1];
+    Result.z = Vec.x * Mat.M[0][2] + Vec.y * Mat.M[1][2] + Vec.z * Mat.M[2][2] + 0.0f * Mat.M[3][2];
 #endif
 
     return Result;
@@ -578,7 +798,14 @@ FVector FMatrix::TransformVector(const FVector& Vec, const FMatrix& Mat)
 FVector4 FMatrix::TransformVector(const FVector4& Vec, const FMatrix& Mat)
 {
     FVector4 Result;
-#if SIMD
+#if AVX //@TODO: TransformVector(FVector4) - SSE와 차이가 없음. 개선 방안
+    __m256 V0 = _mm256_set_m128(_mm_set1_ps(Vec.y), _mm_set1_ps(Vec.x));
+    __m256 V1 = _mm256_set_m128(_mm_set1_ps(Vec.a), _mm_set1_ps(Vec.z));
+
+    __m256 R = _mm256_add_ps(_mm256_mul_ps(V0, Mat.Row256[0]), _mm256_mul_ps(V1, Mat.Row256[1]));
+
+    _mm_storeu_ps(reinterpret_cast<float*>(&Result), _mm_add_ps(_mm256_castps256_ps128(R), _mm256_extractf128_ps(R, 1)));
+#elif SSE
     __m128 VX = _mm_set_ps1(Vec.x);
     __m128 VY = _mm_set_ps1(Vec.y);
     __m128 VZ = _mm_set_ps1(Vec.z);
@@ -591,17 +818,17 @@ FVector4 FMatrix::TransformVector(const FVector4& Vec, const FMatrix& Mat)
 
     _mm_storeu_ps(reinterpret_cast<float*>(&Result), R);
 #else
-    result.x = Vec.x * Mat.M[0][0] + Vec.y * Mat.M[1][0] + Vec.z * Mat.M[2][0] + Vec.a * Mat.M[3][0];
-    result.y = Vec.x * Mat.M[0][1] + Vec.y * Mat.M[1][1] + Vec.z * Mat.M[2][1] + Vec.a * Mat.M[3][1];
-    result.z = Vec.x * Mat.M[0][2] + Vec.y * Mat.M[1][2] + Vec.z * Mat.M[2][2] + Vec.a * Mat.M[3][2];
-    result.a = Vec.x * Mat.M[0][3] + Vec.y * Mat.M[1][3] + Vec.z * Mat.M[2][3] + Vec.a * Mat.M[3][3];
+    Result.x = Vec.x * Mat.M[0][0] + Vec.y * Mat.M[1][0] + Vec.z * Mat.M[2][0] + Vec.a * Mat.M[3][0];
+    Result.y = Vec.x * Mat.M[0][1] + Vec.y * Mat.M[1][1] + Vec.z * Mat.M[2][1] + Vec.a * Mat.M[3][1];
+    Result.z = Vec.x * Mat.M[0][2] + Vec.y * Mat.M[1][2] + Vec.z * Mat.M[2][2] + Vec.a * Mat.M[3][2];
+    Result.a = Vec.x * Mat.M[0][3] + Vec.y * Mat.M[1][3] + Vec.z * Mat.M[2][3] + Vec.a * Mat.M[3][3];
 #endif
     return Result;
 }
 
 FVector FMatrix::TransformPosition(const FVector& Vec) const
 {
-#if SIMD
+#if SSE or AVX //@TODO: TransformPosition(FVector) - SSE와 차이가 없음. 미구현
     FVector Result;
     __m128 VX = _mm_set_ps1(Vec.x);
     __m128 VY = _mm_set_ps1(Vec.y);
@@ -616,13 +843,19 @@ FVector FMatrix::TransformPosition(const FVector& Vec) const
     __m128 Mask = _mm_cmpneq_ps(W, _mm_setzero_ps());   // w가 0이 아닌 경우
     R = _mm_blendv_ps(R, _mm_div_ps(R, W), Mask);
 
-    _mm_storeu_ps(reinterpret_cast<float*>(&Result), R);
+    //@Note: Vector는 float[3]이므로 reinterpret_cast를 통해 __m128을 변환 시 메모리 침식이 일어남
+    //_mm_storeu_ps(reinterpret_cast<float*>(&Result), R);
+    _mm_store_ss(&Result.x, R);
+    R = _mm_shuffle_ps(R, R, _MM_SHUFFLE(0, 3, 2, 1));
+    _mm_store_ss(&Result.y, R);
+    R = _mm_shuffle_ps(R, R, _MM_SHUFFLE(0, 3, 2, 1));
+    _mm_store_ss(&Result.z, R);
     return Result;
 #else
-	float x = M[0][0] * vector.x + M[1][0] * vector.y + M[2][0] * vector.z + M[3][0];
-	float y = M[0][1] * vector.x + M[1][1] * vector.y + M[2][1] * vector.z + M[3][1];
-	float z = M[0][2] * vector.x + M[1][2] * vector.y + M[2][2] * vector.z + M[3][2];
-	float w = M[0][3] * vector.x + M[1][3] * vector.y + M[2][3] * vector.z + M[3][3];
+	float x = M[0][0] * Vec.x + M[1][0] * Vec.y + M[2][0] * Vec.z + M[3][0];
+	float y = M[0][1] * Vec.x + M[1][1] * Vec.y + M[2][1] * Vec.z + M[3][1];
+	float z = M[0][2] * Vec.x + M[1][2] * Vec.y + M[2][2] * Vec.z + M[3][2];
+	float w = M[0][3] * Vec.x + M[1][3] * Vec.y + M[2][3] * Vec.z + M[3][3];
 	return w != 0.0f ? FVector{ x / w, y / w, z / w } : FVector{ x, y, z };
 #endif
 }
