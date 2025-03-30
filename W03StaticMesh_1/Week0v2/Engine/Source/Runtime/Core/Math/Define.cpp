@@ -1,5 +1,5 @@
 #include "Define.h"
-#define SIMD 0
+#define SIMD 1
 #define AVX 0
 
 // 단위 행렬 정의
@@ -46,7 +46,12 @@ FMatrix FMatrix::operator*(const FMatrix& Other) const {
     for (int32 i = 0; i < 4; i++)
     {
 #if SIMD
-        Result.Row[i] = MulVecMat(Row[i], Other);
+        __m128 R = Row[i];
+        __m128 R0 = _mm_mul_ps(_mm_shuffle_ps(R, R, 0x00), Other.Row[0]);
+        __m128 R1 = _mm_mul_ps(_mm_shuffle_ps(R, R, 0x55), Other.Row[1]);
+        __m128 R2 = _mm_mul_ps(_mm_shuffle_ps(R, R, 0xAA), Other.Row[2]);
+        __m128 R3 = _mm_mul_ps(_mm_shuffle_ps(R, R, 0xFF), Other.Row[3]);
+        Result.Row[i] = _mm_add_ps(_mm_add_ps(R0, R1), _mm_add_ps(R2, R3));
 #else
         for (int32 j = 0; j < 4; j++)
             for (int32 k = 0; k < 4; k++)
@@ -79,24 +84,6 @@ FMatrix FMatrix::operator*(const FMatrix& Other) const {
     //}
     //return R;
 }
-
-#if SIMD
-// 벡터 곱셈
-__m128 FMatrix::MulVecMat(const __m128& Vector, const FMatrix& Matrix) const
-{
-    __m128 VX = XM_PERMUTE_PS(Vector, 0x00);   // 0x00 = 0b00 00 00 00 (X)
-    __m128 VY = XM_PERMUTE_PS(Vector, 0x55);   // 0x55 = 0b01 01 01 01 (Y)
-    __m128 VZ = XM_PERMUTE_PS(Vector, 0xAA);   // 0xAA = 0b10 10 10 10 (Z)
-    __m128 VW = XM_PERMUTE_PS(Vector, 0xFF);   // 0xFF = 0b11 11 11 11 (W)
-
-    __m128 R =             _mm_mul_ps(VX, Matrix.Row[0]);
-    R = _mm_add_ps(R, _mm_mul_ps(VY, Matrix.Row[1]));
-    R = _mm_add_ps(R, _mm_mul_ps(VZ, Matrix.Row[2]));
-    R = _mm_add_ps(R, _mm_mul_ps(VW, Matrix.Row[3]));
-
-    return R;
-}
-#endif
 
 // 스칼라 곱셈
 FMatrix FMatrix::operator*(float Scalar) const {
@@ -245,12 +232,13 @@ float FMatrix::Determinant(const FMatrix& Mat)
 
 FMatrix FMatrix::Inverse(const FMatrix& Mat) {
 #if SIMD
-    // https://github.com/microsoft/DirectXMath/blob/main/Inc/DirectXMathMatrix.inl
     // Cramer's Rule
-    float det = Determinant(Mat);
-    if (fabs(det) < 1e-6) {
-        return Identity;
-    }
+    // https://github.com/microsoft/DirectXMath/blob/main/Inc/DirectXMathMatrix.inl
+
+    //float det = Determinant(Mat);
+    //if (fabs(det) < 1e-6) {
+    //    return Identity;
+    //}
 
     // Transpose matrix
     FMatrix MatT = Transpose(Mat);
@@ -444,7 +432,6 @@ FMatrix FMatrix::CreateRotation(float roll, float pitch, float yaw)
     return rotationX * rotationY * rotationZ;  // 이렇게 하면  오른쪽 부터 적용됨
 }
 
-
 // 스케일 행렬 생성
 FMatrix FMatrix::CreateScale(float scaleX, float scaleY, float scaleZ)
 {
@@ -459,9 +446,14 @@ FMatrix FMatrix::CreateScale(float scaleX, float scaleY, float scaleZ)
 FMatrix FMatrix::CreateTranslationMatrix(const FVector& position)
 {
     FMatrix translationMatrix = FMatrix::Identity;
+#if SIMD
+    // Identity이므로 M[3][3] = 1
+    translationMatrix.Row[3] = _mm_set_ps(1.0f, position.z, position.y, position.x);
+#else
     translationMatrix.M[3][0] = position.x;
     translationMatrix.M[3][1] = position.y;
     translationMatrix.M[3][2] = position.z;
+#endif
     return translationMatrix;
 }
 
@@ -559,55 +551,73 @@ void FMatrix::Split4x4To2x2(const FMatrix& Mat, __m128& A, __m128& B, __m128& C,
 }
 #endif
 
-FVector FMatrix::TransformVector(const FVector& v, const FMatrix& m)
+FVector FMatrix::TransformVector(const FVector& Vec, const FMatrix& Mat)
 {
-    FVector result;
+    FVector Result;
+#if SIMD
+    __m128 VX = _mm_set_ps1(Vec.x);
+    __m128 VY = _mm_set_ps1(Vec.y);
+    __m128 VZ = _mm_set_ps1(Vec.z);
 
+    __m128 R = _mm_mul_ps(VX, Mat.Row[0]);
+    R = _mm_add_ps(R, _mm_mul_ps(VY, Mat.Row[1]));
+    R = _mm_add_ps(R, _mm_mul_ps(VZ, Mat.Row[2]));
+
+    _mm_storeu_ps(reinterpret_cast<float*>(&Result), R);
+#else
     // 4x4 행렬을 사용하여 벡터 변환 (W = 0으로 가정, 방향 벡터)
-    result.x = v.x * m.M[0][0] + v.y * m.M[1][0] + v.z * m.M[2][0] + 0.0f * m.M[3][0];
-    result.y = v.x * m.M[0][1] + v.y * m.M[1][1] + v.z * m.M[2][1] + 0.0f * m.M[3][1];
-    result.z = v.x * m.M[0][2] + v.y * m.M[1][2] + v.z * m.M[2][2] + 0.0f * m.M[3][2];
+    result.x = Vec.x * Mat.M[0][0] + Vec.y * Mat.M[1][0] + Vec.z * Mat.M[2][0] + 0.0f * Mat.M[3][0];
+    result.y = Vec.x * Mat.M[0][1] + Vec.y * Mat.M[1][1] + Vec.z * Mat.M[2][1] + 0.0f * Mat.M[3][1];
+    result.z = Vec.x * Mat.M[0][2] + Vec.y * Mat.M[1][2] + Vec.z * Mat.M[2][2] + 0.0f * Mat.M[3][2];
+#endif
 
-
-    return result;
+    return Result;
 }
 
 // FVector4를 변환하는 함수
-FVector4 FMatrix::TransformVector(const FVector4& v, const FMatrix& m)
+FVector4 FMatrix::TransformVector(const FVector4& Vec, const FMatrix& Mat)
 {
-    FVector4 result;
-    result.x = v.x * m.M[0][0] + v.y * m.M[1][0] + v.z * m.M[2][0] + v.a * m.M[3][0];
-    result.y = v.x * m.M[0][1] + v.y * m.M[1][1] + v.z * m.M[2][1] + v.a * m.M[3][1];
-    result.z = v.x * m.M[0][2] + v.y * m.M[1][2] + v.z * m.M[2][2] + v.a * m.M[3][2];
-    result.a = v.x * m.M[0][3] + v.y * m.M[1][3] + v.z * m.M[2][3] + v.a * m.M[3][3];
-    return result;
+    FVector4 Result;
+#if SIMD
+    __m128 VX = _mm_set_ps1(Vec.x);
+    __m128 VY = _mm_set_ps1(Vec.y);
+    __m128 VZ = _mm_set_ps1(Vec.z);
+    __m128 VW = _mm_set_ps1(Vec.a);
+
+    __m128 R = _mm_mul_ps(VX, Mat.Row[0]);
+    R = _mm_add_ps(R, _mm_mul_ps(VY, Mat.Row[1]));
+    R = _mm_add_ps(R, _mm_mul_ps(VZ, Mat.Row[2]));
+    R = _mm_add_ps(R, _mm_mul_ps(VW, Mat.Row[3]));
+
+    _mm_storeu_ps(reinterpret_cast<float*>(&Result), R);
+#else
+    result.x = Vec.x * Mat.M[0][0] + Vec.y * Mat.M[1][0] + Vec.z * Mat.M[2][0] + Vec.a * Mat.M[3][0];
+    result.y = Vec.x * Mat.M[0][1] + Vec.y * Mat.M[1][1] + Vec.z * Mat.M[2][1] + Vec.a * Mat.M[3][1];
+    result.z = Vec.x * Mat.M[0][2] + Vec.y * Mat.M[1][2] + Vec.z * Mat.M[2][2] + Vec.a * Mat.M[3][2];
+    result.a = Vec.x * Mat.M[0][3] + Vec.y * Mat.M[1][3] + Vec.z * Mat.M[2][3] + Vec.a * Mat.M[3][3];
+#endif
+    return Result;
 }
 
-FVector FMatrix::TransformPosition(const FVector& vector) const
+FVector FMatrix::TransformPosition(const FVector& Vec) const
 {
 #if SIMD
-    FMatrix T = FMatrix::Transpose(*this);
+    FVector Result;
+    __m128 VX = _mm_set_ps1(Vec.x);
+    __m128 VY = _mm_set_ps1(Vec.y);
+    __m128 VZ = _mm_set_ps1(Vec.z);
+    __m128 VW = _mm_set_ps1(1.f);
+    __m128 R = _mm_mul_ps(VX, Row[0]);
+    R = _mm_add_ps(R, _mm_mul_ps(VY, Row[1]));
+    R = _mm_add_ps(R, _mm_mul_ps(VZ, Row[2]));
+    R = _mm_add_ps(R, _mm_mul_ps(VW, Row[3]));
+    // w 값으로 나누기
+    __m128 W = _mm_shuffle_ps(R, R, _MM_SHUFFLE(3, 3, 3, 3));
+    __m128 Mask = _mm_cmpneq_ps(W, _mm_setzero_ps());   // w가 0이 아닌 경우
+    R = _mm_blendv_ps(R, _mm_div_ps(R, W), Mask);
 
-    __m128 vec = _mm_set_ps(vector.x, vector.y, vector.z, 1.f);
-    float* xx = _mm_mul_ps(vec, T.Row[0]).m128_f32;
-    float* yy = _mm_mul_ps(vec, T.Row[1]).m128_f32;
-    float* zz = _mm_mul_ps(vec, T.Row[2]).m128_f32;
-    float* ww = _mm_mul_ps(vec, T.Row[3]).m128_f32;
-    float w = ww[0] + ww[1] + ww[2] + ww[3];
-    if (w != 0.f) {
-        return FVector(
-            (xx[0] + xx[1] + xx[2] + xx[3]) / w,
-            (yy[0] + yy[1] + yy[2] + yy[3]) / w,
-            (zz[0] + zz[1] + zz[2] + zz[3]) / w
-        );
-    }
-    else {
-        return FVector(
-            xx[0] + xx[1] + xx[2] + xx[3],
-            yy[0] + yy[1] + yy[2] + yy[3],
-            zz[0] + zz[1] + zz[2] + zz[3]
-        );
-    }
+    _mm_storeu_ps(reinterpret_cast<float*>(&Result), R);
+    return Result;
 #else
 	float x = M[0][0] * vector.x + M[1][0] * vector.y + M[2][0] * vector.z + M[3][0];
 	float y = M[0][1] * vector.x + M[1][1] * vector.y + M[2][1] * vector.z + M[3][1];

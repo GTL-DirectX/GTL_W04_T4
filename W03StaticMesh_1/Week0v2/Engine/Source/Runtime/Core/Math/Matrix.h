@@ -2,7 +2,7 @@
 
 #include <DirectXMath.h>
 
-#define SIMD 0
+#define SIMD 1
 #define AVX 0
 
 // 4x4 행렬 연산
