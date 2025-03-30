@@ -82,15 +82,15 @@ void AGizmoActor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-    if (const AActor* PickedActor = GetWorld()->GetSelectedActor())
-    {
-        SetActorLocation(PickedActor->GetActorLocation());
-        if (GetWorld()->GetEditorPlayer()->GetCoordiMode() == CoordiMode::CDM_LOCAL)
-        {
-            // TODO: 임시로 RootComponent의 정보로 사용
-            SetActorRotation(PickedActor->GetActorRotation());
-        }
-        else if (GetWorld()->GetEditorPlayer()->GetCoordiMode() == CoordiMode::CDM_WORLD)
-            SetActorRotation(FVector(0.0f, 0.0f, 0.0f));
-    }
+    // if (const AActor* PickedActor = GetWorld()->GetSelectedActor())
+    // {
+    //     SetActorLocation(PickedActor->GetActorLocation());
+    //     if (GetWorld()->GetEditorPlayer()->GetCoordiMode() == CoordiMode::CDM_LOCAL)
+    //     {
+    //         // TODO: 임시로 RootComponent의 정보로 사용
+    //         SetActorRotation(PickedActor->GetActorRotation());
+    //     }
+    //     else if (GetWorld()->GetEditorPlayer()->GetCoordiMode() == CoordiMode::CDM_WORLD)
+    //         SetActorRotation(FVector(0.0f, 0.0f, 0.0f));
+    // }
 }

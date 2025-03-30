@@ -91,12 +91,11 @@ FVector USceneComponent::GetWorldScale()
 
 FVector USceneComponent::GetWorldLocation()
 {
-	if (AttachParent)
-	{
-		return FVector(AttachParent->GetWorldLocation() + GetLocalLocation());
-	}
-	else
-		return GetLocalLocation();
+	// if (AttachParent)
+	// {
+	// 	return FVector(AttachParent->GetWorldLocation() + GetLocalLocation());
+	// }
+    return GetLocalLocation();
 }
 
 FVector USceneComponent::GetLocalRotation()

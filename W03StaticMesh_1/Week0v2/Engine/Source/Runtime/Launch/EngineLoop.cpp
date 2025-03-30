@@ -253,6 +253,7 @@ void FEngineLoop::CreateNewWorld()
 {
     if (GWorld)
     {
+        GWorld->GetRootOctree()->ClearTree();
         GWorld->Release();
         GWorld = nullptr;
     }

@@ -46,14 +46,14 @@ void AEditorPlayer::Input()
             GetCursorPos(&mousePos);
             GetCursorPos(&m_LastMousePos);
 
-            uint32 UUID = GetEngine().graphicDevice.GetPixelUUID(mousePos);
-            // TArray<UObject*> objectArr = GetWorld()->GetObjectArr();
-            for ( const auto obj : TObjectRange<USceneComponent>())
-            {
-                if (obj->GetUUID() != UUID) continue;
-
-                UE_LOG(LogLevel::Display, *obj->GetName());
-            }
+            // uint32 UUID = GetEngine().graphicDevice.GetPixelUUID(mousePos);
+            // // TArray<UObject*> objectArr = GetWorld()->GetObjectArr();
+            // for ( const auto obj : TObjectRange<USceneComponent>())
+            // {
+            //     if (obj->GetUUID() != UUID) continue;
+            //
+            //     UE_LOG(LogLevel::Display, "Pixel Picking %s", *obj->GetName());
+            // }
             ScreenToClient(GetEngine().hWnd, &mousePos);
 
             FVector pickPosition;
@@ -61,18 +61,18 @@ void AEditorPlayer::Input()
             const auto& ActiveViewport = GetEngine().GetLevelEditor()->GetActiveViewportClient();
             ScreenToViewSpace(mousePos.x, mousePos.y, ActiveViewport->GetViewMatrix(), ActiveViewport->GetProjectionMatrix(), pickPosition);
             FRay ray = GetMouseRay(mousePos.x, mousePos.y);
-            
-            if (!PickGizmo(pickPosition))
-            {
-                // PickActor(pickPosition, ray.Direction);
-                PickActor(ray);
-            }
+            PickActor(ray);
+            // if (!PickGizmo(pickPosition))
+            // {
+            //     // PickActor(pickPosition, ray.Direction);
+            //     
+            // }
 
         }
-        else
-        {
-            PickedObjControl();
-        }
+        // else
+        // {
+        //     PickedObjControl();
+        // }
     }
     else
     {
@@ -298,6 +298,7 @@ void AEditorPlayer::PickActor(const FRay& Ray)
         
         if (RayIntersectsObject(Ray, pObj, Distance, currentIntersectCount))
         {
+            std::cout << *pObj->GetName() << ":" << Distance << std::endl;
             if (Distance < minDistance)
             {
                 minDistance = Distance;
@@ -401,18 +402,18 @@ int AEditorPlayer::RayIntersectsObject(const FVector& pickPosition, USceneCompon
 int AEditorPlayer::RayIntersectsObject(const FRay& Ray, USceneComponent* obj, float& hitDistance, int& intersectCount)
 {
     // 객체의 월드 변환 행렬 생성
-    FMatrix scaleMatrix = FMatrix::CreateScale(
-        obj->GetWorldScale().x,
-        obj->GetWorldScale().y,
-        obj->GetWorldScale().z
-    );
-    FMatrix rotationMatrix = FMatrix::CreateRotation(
-        obj->GetWorldRotation().x,
-        obj->GetWorldRotation().y,
-        obj->GetWorldRotation().z
-    );
+    // FMatrix scaleMatrix = FMatrix::CreateScale(
+    //     obj->GetWorldScale().x,
+    //     obj->GetWorldScale().y,
+    //     obj->GetWorldScale().z
+    // );
+    // FMatrix rotationMatrix = FMatrix::CreateRotation(
+    //     obj->GetWorldRotation().x,
+    //     obj->GetWorldRotation().y,
+    //     obj->GetWorldRotation().z
+    // );
     FMatrix translationMatrix = FMatrix::CreateTranslationMatrix(obj->GetWorldLocation());
-    FMatrix worldMatrix = scaleMatrix * rotationMatrix * translationMatrix;
+    FMatrix worldMatrix = translationMatrix;
     
     // world ray를 객체의 로컬 좌표계로 변환
     FMatrix invWorldMatrix = FMatrix::Inverse(worldMatrix);
