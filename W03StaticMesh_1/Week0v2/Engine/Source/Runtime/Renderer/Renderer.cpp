@@ -1220,31 +1220,14 @@ void FRenderer::RenderBillboards(UWorld* World, std::shared_ptr<FEditorViewportC
     PrepareShader();
 }
 
-void FRenderer::FrustumCulling(std::shared_ptr<FEditorViewportClient> ActiveViewport)
+void FRenderer::FrustumCulling(const std::shared_ptr<FEditorViewportClient>& ActiveViewport)
 {
     TArray<UStaticMeshComponent*> NewStaticMeshObjs;
 
     FScopeCycleCounter frustumCullingTimer{ TEXT("FrustumCulling") };
-    for (UStaticMeshComponent* StaticMesh : StaticMeshObjs)
-    {
-        if (!StaticMesh)
-            continue;
-
-        // Bounding Box
-        /*if (ActiveViewport->GetCameraFrustum().IntersectMesh(StaticMesh->GetWorldSpaceBoundingBox()))
-        {
-            NewStaticMeshObjs.Emplace(StaticMesh);
-        }*/
-
-        // Bounding Sphere
-        if (ActiveViewport->GetCameraFrustum().IntersectMesh(StaticMesh->GetWorldSpaceBoundingSphere()))
-        {
-            NewStaticMeshObjs.Emplace(StaticMesh);
-        }
-
-    }
-
-    //UE_LOG(LogLevel::Display, "FrustumCulling : %d -> %d", StaticMeshObjs.Num(), NewStaticMeshObjs.Num());
+    const FCameraFrustum& Frustum = ActiveViewport->GetCameraFrustum();
+    GEngineLoop.GetWorld()->GetRootOctree()->QueryFrustum(Frustum, NewStaticMeshObjs);
+    
     StaticMeshObjs = NewStaticMeshObjs;
 }
 

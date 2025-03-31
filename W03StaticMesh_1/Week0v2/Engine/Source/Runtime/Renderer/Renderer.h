@@ -148,7 +148,7 @@ public: // line shader
     void RenderBillboards(UWorld* World,std::shared_ptr<FEditorViewportClient> ActiveViewport);
 
 private:
-    void FrustumCulling(std::shared_ptr<FEditorViewportClient> ActiveViewport);
+    void FrustumCulling(const std::shared_ptr<FEditorViewportClient>& ActiveViewport);
     //void OcclusionCulling(std::shared_ptr<FEditorViewportClient> ActiveViewport);
 
 private:
