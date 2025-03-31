@@ -27,7 +27,7 @@ void FRenderer::Initialize(FGraphicsDevice* graphics)
     Graphics = graphics;
     CreateShader();
     //@TODO: Merge with CreateShader
-    CreateTextureShader();
+    //CreateTextureShader();
     CreateLineShader();
 
     CreateConstantBuffers();
@@ -40,7 +40,7 @@ void FRenderer::Release()
 {
     ReleaseShader();
     //@TODO: Merge with ReleaseShader
-    ReleaseTextureShader();
+    //ReleaseTextureShader();
     ReleaseLineShader();
 
     ReleaseConstantBuffers();
@@ -48,10 +48,10 @@ void FRenderer::Release()
 
 void FRenderer::CreateShader()
 {
+    /** Static Mesh */
     ID3DBlob* VertexShaderCSO;
     ID3DBlob* PixelShaderCSO;
 
-    /** Static Mesh */
     D3DCompileFromFile(L"Shaders/StaticMeshVertexShader.hlsl", nullptr, nullptr, "mainVS", "vs_5_0", 0, 0, &VertexShaderCSO, nullptr);
     Graphics->Device->CreateVertexShader(VertexShaderCSO->GetBufferPointer(), VertexShaderCSO->GetBufferSize(), nullptr, &VertexShader);
 
@@ -474,7 +474,7 @@ void FRenderer::UpdateConstant(const FMatrix& MVP, bool IsSelected) const//, con
             constants->MVP = MVP;
             //constants->ModelMatrixInverseTranspose = NormalMatrix;
             //constants->UUIDColor = UUIDColor;
-            constants->IsSelected = IsSelected;
+            constants->IsSelected = IsSelected ? 1 : 0;
         }
         Graphics->DeviceContext->Unmap(ConstantBuffer, 0); // GPU�� �ٽ� ��밡���ϰ� �����
     }
@@ -575,87 +575,87 @@ void FRenderer::UpdateTextureConstant(float UOffset, float VOffset) const
     }
 }
 
-void FRenderer::CreateTextureShader()
-{
-    ID3DBlob* vertextextureshaderCSO;
-    ID3DBlob* pixeltextureshaderCSO;
+//void FRenderer::CreateTextureShader()
+//{
+//    ID3DBlob* vertextextureshaderCSO;
+//    ID3DBlob* pixeltextureshaderCSO;
+//
+//    HRESULT hr;
+//    hr = D3DCompileFromFile(L"Shaders/VertexTextureShader.hlsl", nullptr, nullptr, "main", "vs_5_0", 0, 0, &vertextextureshaderCSO, nullptr);
+//    if (FAILED(hr))
+//    {
+//        Console::GetInstance().AddLog(LogLevel::Warning, "VertexShader Error");
+//    }
+//    Graphics->Device->CreateVertexShader(
+//        vertextextureshaderCSO->GetBufferPointer(), vertextextureshaderCSO->GetBufferSize(), nullptr, &VertexTextureShader
+//    );
+//
+//    hr = D3DCompileFromFile(L"Shaders/PixelTextureShader.hlsl", nullptr, nullptr, "main", "ps_5_0", 0, 0, &pixeltextureshaderCSO, nullptr);
+//    if (FAILED(hr))
+//    {
+//        Console::GetInstance().AddLog(LogLevel::Warning, "PixelShader Error");
+//    }
+//    Graphics->Device->CreatePixelShader(
+//        pixeltextureshaderCSO->GetBufferPointer(), pixeltextureshaderCSO->GetBufferSize(), nullptr, &PixelTextureShader
+//    );
+//
+//    D3D11_INPUT_ELEMENT_DESC layout[] = {
+//        {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
+//        {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0}
+//    };
+//    Graphics->Device->CreateInputLayout(
+//        layout, ARRAYSIZE(layout), vertextextureshaderCSO->GetBufferPointer(), vertextextureshaderCSO->GetBufferSize(), &TextureInputLayout
+//    );
+//
+//    //�ڷᱸ�� ���� �ʿ�
+//    TextureStride = sizeof(FVertexTexture);
+//    vertextextureshaderCSO->Release();
+//    pixeltextureshaderCSO->Release();
+//}
 
-    HRESULT hr;
-    hr = D3DCompileFromFile(L"Shaders/VertexTextureShader.hlsl", nullptr, nullptr, "main", "vs_5_0", 0, 0, &vertextextureshaderCSO, nullptr);
-    if (FAILED(hr))
-    {
-        Console::GetInstance().AddLog(LogLevel::Warning, "VertexShader Error");
-    }
-    Graphics->Device->CreateVertexShader(
-        vertextextureshaderCSO->GetBufferPointer(), vertextextureshaderCSO->GetBufferSize(), nullptr, &VertexTextureShader
-    );
+//void FRenderer::ReleaseTextureShader()
+//{
+//    if (TextureInputLayout)
+//    {
+//        TextureInputLayout->Release();
+//        TextureInputLayout = nullptr;
+//    }
+//
+//    if (PixelTextureShader)
+//    {
+//        PixelTextureShader->Release();
+//        PixelTextureShader = nullptr;
+//    }
+//
+//    if (VertexTextureShader)
+//    {
+//        VertexTextureShader->Release();
+//        VertexTextureShader = nullptr;
+//    }
+//    //if (SubUVConstantBuffer)
+//    //{
+//    //    SubUVConstantBuffer->Release();
+//    //    SubUVConstantBuffer = nullptr;
+//    //}
+//    //if (ConstantBuffer)
+//    //{
+//    //    ConstantBuffer->Release();
+//    //    ConstantBuffer = nullptr;
+//    //}
+//}
 
-    hr = D3DCompileFromFile(L"Shaders/PixelTextureShader.hlsl", nullptr, nullptr, "main", "ps_5_0", 0, 0, &pixeltextureshaderCSO, nullptr);
-    if (FAILED(hr))
-    {
-        Console::GetInstance().AddLog(LogLevel::Warning, "PixelShader Error");
-    }
-    Graphics->Device->CreatePixelShader(
-        pixeltextureshaderCSO->GetBufferPointer(), pixeltextureshaderCSO->GetBufferSize(), nullptr, &PixelTextureShader
-    );
-
-    D3D11_INPUT_ELEMENT_DESC layout[] = {
-        {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-        {"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0}
-    };
-    Graphics->Device->CreateInputLayout(
-        layout, ARRAYSIZE(layout), vertextextureshaderCSO->GetBufferPointer(), vertextextureshaderCSO->GetBufferSize(), &TextureInputLayout
-    );
-
-    //�ڷᱸ�� ���� �ʿ�
-    TextureStride = sizeof(FVertexTexture);
-    vertextextureshaderCSO->Release();
-    pixeltextureshaderCSO->Release();
-}
-
-void FRenderer::ReleaseTextureShader()
-{
-    if (TextureInputLayout)
-    {
-        TextureInputLayout->Release();
-        TextureInputLayout = nullptr;
-    }
-
-    if (PixelTextureShader)
-    {
-        PixelTextureShader->Release();
-        PixelTextureShader = nullptr;
-    }
-
-    if (VertexTextureShader)
-    {
-        VertexTextureShader->Release();
-        VertexTextureShader = nullptr;
-    }
-    //if (SubUVConstantBuffer)
-    //{
-    //    SubUVConstantBuffer->Release();
-    //    SubUVConstantBuffer = nullptr;
-    //}
-    //if (ConstantBuffer)
-    //{
-    //    ConstantBuffer->Release();
-    //    ConstantBuffer = nullptr;
-    //}
-}
-
-void FRenderer::PrepareTextureShader() const
-{
-    Graphics->DeviceContext->VSSetShader(VertexTextureShader, nullptr, 0);
-    Graphics->DeviceContext->PSSetShader(PixelTextureShader, nullptr, 0);
-    Graphics->DeviceContext->IASetInputLayout(TextureInputLayout);
-
-    //�ؽ��Ŀ� ConstantBuffer �߰��ʿ��Ҽ���
-    if (ConstantBuffer)
-    {
-        Graphics->DeviceContext->VSSetConstantBuffers(0, 1, &ConstantBuffer);
-    }
-}
+//void FRenderer::PrepareTextureShader() const
+//{
+//    Graphics->DeviceContext->VSSetShader(VertexTextureShader, nullptr, 0);
+//    Graphics->DeviceContext->PSSetShader(PixelTextureShader, nullptr, 0);
+//    Graphics->DeviceContext->IASetInputLayout(TextureInputLayout);
+//
+//    //�ؽ��Ŀ� ConstantBuffer �߰��ʿ��Ҽ���
+//    if (ConstantBuffer)
+//    {
+//        Graphics->DeviceContext->VSSetConstantBuffers(0, 1, &ConstantBuffer);
+//    }
+//}
 
 //ID3D11Buffer* FRenderer::CreateVertexTextureBuffer(FVertexTexture* vertices, UINT byteWidth) const
 //{
@@ -696,51 +696,50 @@ void FRenderer::PrepareTextureShader() const
 //    return indexBuffer;
 //}
 
-void FRenderer::RenderTexturePrimitive(
-    ID3D11Buffer* pVertexBuffer, UINT numVertices, ID3D11Buffer* pIndexBuffer, UINT numIndices, ID3D11ShaderResourceView* _TextureSRV,
-    ID3D11SamplerState* _SamplerState
-) const
-{
-    if (!_TextureSRV || !_SamplerState)
-    {
-        Console::GetInstance().AddLog(LogLevel::Warning, "SRV, Sampler Error");
-    }
-    if (numIndices <= 0)
-    {
-        Console::GetInstance().AddLog(LogLevel::Warning, "numIndices Error");
-    }
-    UINT offset = 0;
-    Graphics->DeviceContext->IASetVertexBuffers(0, 1, &pVertexBuffer, &TextureStride, &offset);
-    Graphics->DeviceContext->IASetIndexBuffer(pIndexBuffer, DXGI_FORMAT_R32_UINT, 0);
-
-    Graphics->DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    Graphics->DeviceContext->PSSetShaderResources(0, 1, &_TextureSRV);
-    Graphics->DeviceContext->PSSetSamplers(0, 1, &_SamplerState);
-
-    Graphics->DeviceContext->DrawIndexed(numIndices, 0, 0);
-}
+//void FRenderer::RenderTexturePrimitive(
+//    ID3D11Buffer* pVertexBuffer, UINT numVertices, ID3D11Buffer* pIndexBuffer, UINT numIndices, ID3D11ShaderResourceView* _TextureSRV,
+//    ID3D11SamplerState* _SamplerState
+//) const
+//{
+//    if (!_TextureSRV || !_SamplerState)
+//    {
+//        Console::GetInstance().AddLog(LogLevel::Warning, "SRV, Sampler Error");
+//    }
+//    if (numIndices <= 0)
+//    {
+//        Console::GetInstance().AddLog(LogLevel::Warning, "numIndices Error");
+//    }
+//    UINT offset = 0;
+//    Graphics->DeviceContext->IASetVertexBuffers(0, 1, &pVertexBuffer, &TextureStride, &offset);
+//    Graphics->DeviceContext->IASetIndexBuffer(pIndexBuffer, DXGI_FORMAT_R32_UINT, 0);
+//
+//    Graphics->DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+//    Graphics->DeviceContext->PSSetShaderResources(0, 1, &_TextureSRV);
+//    Graphics->DeviceContext->PSSetSamplers(0, 1, &_SamplerState);
+//
+//    Graphics->DeviceContext->DrawIndexed(numIndices, 0, 0);
+//}
 
 //��Ʈ ��ġ������
-void FRenderer::RenderTextPrimitive(
-    ID3D11Buffer* pVertexBuffer, UINT numVertices, ID3D11ShaderResourceView* _TextureSRV, ID3D11SamplerState* _SamplerState
-) const
-{
-    if (!_TextureSRV || !_SamplerState)
-    {
-        Console::GetInstance().AddLog(LogLevel::Warning, "SRV, Sampler Error");
-    }
-    UINT offset = 0;
-    Graphics->DeviceContext->IASetVertexBuffers(0, 1, &pVertexBuffer, &TextureStride, &offset);
-
-    // �Է� ���̾ƿ� �� �⺻ ����
-    Graphics->DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    Graphics->DeviceContext->PSSetShaderResources(0, 1, &_TextureSRV);
-    Graphics->DeviceContext->PSSetSamplers(0, 1, &_SamplerState);
-
-    // ��ο� ȣ�� (6���� �ε��� ���)
-    Graphics->DeviceContext->Draw(numVertices, 0);
-}
-
+//void FRenderer::RenderTextPrimitive(
+//    ID3D11Buffer* pVertexBuffer, UINT numVertices, ID3D11ShaderResourceView* _TextureSRV, ID3D11SamplerState* _SamplerState
+//) const
+//{
+//    if (!_TextureSRV || !_SamplerState)
+//    {
+//        Console::GetInstance().AddLog(LogLevel::Warning, "SRV, Sampler Error");
+//    }
+//    UINT offset = 0;
+//    Graphics->DeviceContext->IASetVertexBuffers(0, 1, &pVertexBuffer, &TextureStride, &offset);
+//
+//    // �Է� ���̾ƿ� �� �⺻ ����
+//    Graphics->DeviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+//    Graphics->DeviceContext->PSSetShaderResources(0, 1, &_TextureSRV);
+//    Graphics->DeviceContext->PSSetSamplers(0, 1, &_SamplerState);
+//
+//    // ��ο� ȣ�� (6���� �ε��� ���)
+//    Graphics->DeviceContext->Draw(numVertices, 0);
+//}
 
 ID3D11Buffer* FRenderer::CreateVertexBuffer(FVertexTexture* vertices, UINT byteWidth) const
 {

@@ -107,18 +107,18 @@ public://텍스쳐용 기능 추가
     ID3D11Buffer* SubUVConstantBuffer = nullptr;
 
 public:
-    void CreateTextureShader();
-    void ReleaseTextureShader();
-    void PrepareTextureShader() const;
+    //void CreateTextureShader();
+    //void ReleaseTextureShader();
+    //void PrepareTextureShader() const;
     //ID3D11Buffer* CreateVertexTextureBuffer(FVertexTexture* vertices, UINT byteWidth) const;
     //ID3D11Buffer* CreateIndexTextureBuffer(uint32* indices, UINT byteWidth) const;
-    void RenderTexturePrimitive(ID3D11Buffer* pVertexBuffer, UINT numVertices,
-        ID3D11Buffer* pIndexBuffer, UINT numIndices,
-        ID3D11ShaderResourceView* _TextureSRV,
-        ID3D11SamplerState* _SamplerState) const;
-    void RenderTextPrimitive(ID3D11Buffer* pVertexBuffer, UINT numVertices,
-        ID3D11ShaderResourceView* _TextureSRV,
-        ID3D11SamplerState* _SamplerState) const;
+    //void RenderTexturePrimitive(ID3D11Buffer* pVertexBuffer, UINT numVertices,
+    //    ID3D11Buffer* pIndexBuffer, UINT numIndices,
+    //    ID3D11ShaderResourceView* _TextureSRV,
+    //    ID3D11SamplerState* _SamplerState) const;
+    //void RenderTextPrimitive(ID3D11Buffer* pVertexBuffer, UINT numVertices,
+    //    ID3D11ShaderResourceView* _TextureSRV,
+    //    ID3D11SamplerState* _SamplerState) const;
     ID3D11Buffer* CreateVertexBuffer(FVertexTexture* vertices, UINT byteWidth) const;
 
     void UpdateSubUVConstant(float _indexU, float _indexV) const;
