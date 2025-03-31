@@ -528,6 +528,7 @@ void ControlEditorPanel::CreatePerformanceOverlay()
     double meshRenderingTime = 0.0f;
     double uuidRenderingTime = 0.0f;
     double frustumCulling = 0.0f;
+    double CachingTime = 0.0f;
 
     if (FWindowsPlatformTime::TimeMap.Contains(TEXT("Fps")))
     {
@@ -561,6 +562,11 @@ void ControlEditorPanel::CreatePerformanceOverlay()
         frustumCulling = FWindowsPlatformTime::TimeMap[TEXT("FrustumCulling")];
     }
 
+    if (FWindowsPlatformTime::TimeMap.Contains(TEXT("CachingFrame")))
+    {
+        CachingTime = FWindowsPlatformTime::TimeMap[TEXT("CachingFrame")];
+    }
+
     // 그리기 전에 창의 위치와 배경 투명도를 설정합니다.
     //ImGui::SetNextWindowBgAlpha(100.0f);
     // ImGui::SetNextWindowPos(ImVec2(10, 50));
@@ -582,6 +588,7 @@ void ControlEditorPanel::CreatePerformanceOverlay()
         ImGui::Text("Static Mesh Render : %.5f ms", meshRenderingTime);
         ImGui::Text("UUIDs Render : %.5f ms", uuidRenderingTime);
         ImGui::Text("Frustum Culling : %.5f ms", frustumCulling);
+        ImGui::Text("Caching Time : %.5f ms", CachingTime);
         ImGui::PopStyleColor();
         ImGui::End();
     }

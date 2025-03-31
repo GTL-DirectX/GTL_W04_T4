@@ -1366,6 +1366,7 @@ void FRenderer::FrustumCulling(const std::shared_ptr<FEditorViewportClient>& Act
 
 void FRenderer::UpdatePostFrameRenderedStaticMeshObjs()
 {
+    FScopeCycleCounter CachingFrame { TEXT("CachingFrame") };
     PostFrameRenderedStaticMeshObjs.Empty();
     TSet<uint32> RenderedUUIDs = Graphics->GetRenderedUUIDs();
     for (uint32 UUID : RenderedUUIDs)
