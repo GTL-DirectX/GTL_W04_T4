@@ -72,32 +72,18 @@ void FCameraFrustum::BuildFromView(FEditorViewportClient* ViewportCamera)
 
 bool FCameraFrustum::IntersectMesh(const FBoundingBox& Box) const
 {
-    FVector Corners[8] = {
-        {Box.min.x, Box.min.y, Box.min.z},
-        {Box.max.x, Box.min.y, Box.min.z},
-        {Box.min.x, Box.max.y, Box.min.z},
-        {Box.max.x, Box.max.y, Box.min.z},
-        {Box.min.x, Box.min.y, Box.max.z},
-        {Box.max.x, Box.min.y, Box.max.z},
-        {Box.min.x, Box.max.y, Box.max.z},
-        {Box.max.x, Box.max.y, Box.max.z}
-    };
-
-    for (const FPlane& Plane : Planes)
+    for (int i = 0; i < 6; ++i)
     {
-        bool AllOutside = true;
-        for (const FVector& Corner : Corners)
-        {
-            if (Plane.DistanceTo(Corner) >= 0)
-            {
-                AllOutside = false;
-                break;
-            }
-        }
-        if (AllOutside)
-        {
+        const FPlane& Plane = Planes[i];
+        FVector PositiveVertex = Box.min;
+        if (Plane.A >= 0)
+            PositiveVertex.x = Box.max.x;
+        if (Plane.B >= 0)
+            PositiveVertex.y = Box.max.y;
+        if (Plane.C >= 0)
+            PositiveVertex.z = Box.max.z;
+        if (Plane.DistanceTo(PositiveVertex) < 0)
             return false;
-        }
     }
     return true;
 }
