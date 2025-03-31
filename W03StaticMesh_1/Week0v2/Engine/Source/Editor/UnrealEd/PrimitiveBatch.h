@@ -19,11 +19,11 @@ public:
     void RenderBatch(const FMatrix& View, const FMatrix& Projection);
     void InitializeVertexBuffer();
     void UpdateBoundingBoxResources();
-    void ReleaseBoundingBoxResources();
+    void ReleaseBoundingBoxResources() const;
     void UpdateConeResources();
-    void ReleaseConeResources();
+    void ReleaseConeResources() const;
     void UpdateOBBResources();
-    void ReleaseOBBResources();
+    void ReleaseOBBResources() const;
     void RenderAABB(const FBoundingBox& localAABB, const FVector& center, const FMatrix& modelMatrix);
     void RenderOBB(const FBoundingBox& localAABB, const FVector& center, const FMatrix& modelMatrix);
 	

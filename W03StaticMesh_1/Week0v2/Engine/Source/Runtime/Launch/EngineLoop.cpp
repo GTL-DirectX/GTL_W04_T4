@@ -133,8 +133,23 @@ int32 FEngineLoop::Init(HINSTANCE hInstance)
 
 void FEngineLoop::Render()
 {
-    graphicDevice.Prepare();
-    if (LevelEditor->IsMultiViewport())
+    if (GetIsInit())
+    {
+        renderer.ClearPostFrameRenderedStaticMeshObjs();
+    }
+    // 새로운 위치에서 정지했을 때만 업데이트 (높은 비용 때문)
+    if ((!GetIsMoving() && GetIsMoved()))
+    {
+        // 이전 프레임에 렌더된 StaticMesh들의 리스트를 업데이트
+        renderer.UpdatePostFrameRenderedStaticMeshObjs();
+    }
+    //TODO: 원래 위치로 이동 (ClearArr), 이전 프레임에 렌더된 StaticMesh 정보 업데이트 이후에 초기화
+    renderer.ClearStaticMeshObjs();
+
+    //TODO: 렌더러 안으로 이동하였음. 올바른 순서로 이동
+    //graphicDevice.Prepare();
+
+    if (LevelEditor->IsMultiViewport()) // Not in Use
     {
         std::shared_ptr<FEditorViewportClient> viewportClient = GetLevelEditor()->GetActiveViewportClient();
         for (int i = 0; i < 4; ++i)
@@ -146,7 +161,7 @@ void FEngineLoop::Render()
             // renderer.PrepareShader();
             // renderer.UpdateLightBuffer();
             // RenderWorld();
-            renderer.PrepareRender();
+            //renderer.PrepareRender();
             renderer.Render(GetWorld(),LevelEditor->GetActiveViewportClient());
         }
         GetLevelEditor()->SetViewportClient(viewportClient);
@@ -159,7 +174,7 @@ void FEngineLoop::Render()
         // renderer.PrepareShader();
         // renderer.UpdateLightBuffer();
         // RenderWorld();
-        renderer.PrepareRender();
+        //renderer.PrepareRender();
         renderer.Render(GetWorld(),LevelEditor->GetActiveViewportClient());
     }
 }
@@ -187,6 +202,8 @@ void FEngineLoop::Tick()
         }
 
         Input();
+        //@Note: Update the viewport client's isMoved flag
+        bIsMoving = LevelEditor->GetActiveViewportClient()->GetIsMoved();
         if (GWorld)
         {
             GWorld->Tick(elapsedTime);
@@ -204,6 +221,8 @@ void FEngineLoop::Tick()
 
             graphicDevice.SwapBuffer();
         }
+        SetIsInit(false);   //TODO: 올바른 위치로 이동
+        UpdateIsMoved();    //TODO: 올바른 위치로 이동
         
         if (bClearWorld)
         {

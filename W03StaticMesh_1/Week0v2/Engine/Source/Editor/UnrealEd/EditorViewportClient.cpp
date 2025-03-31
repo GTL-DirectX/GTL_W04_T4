@@ -55,6 +55,7 @@ void FEditorViewportClient::Release()
 
 void FEditorViewportClient::Input()
 {
+    bIsMoved = false;
     ImGuiIO& io = ImGui::GetIO();
     if (io.WantCaptureMouse) return;
     if (GetAsyncKeyState(VK_RBUTTON) & 0x8000) // VK_RBUTTON은 마우스 오른쪽 버튼을 나타냄
@@ -113,6 +114,7 @@ void FEditorViewportClient::Input()
         {
             CameraMoveUp(-1.f);
         }
+        bIsMoved = true;
     }
     else
     {
@@ -131,6 +133,7 @@ void FEditorViewportClient::Input()
                 PickedActor->GetActorLocation() - (ViewTransform.GetForwardVector() * 10.0f)
             );
         }
+        bIsMoved = true;
     }
 }
 void FEditorViewportClient::ResizeViewport(const DXGI_SWAP_CHAIN_DESC& swapchaindesc)

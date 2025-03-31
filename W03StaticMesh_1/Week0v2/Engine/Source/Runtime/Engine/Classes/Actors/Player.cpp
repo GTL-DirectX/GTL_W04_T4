@@ -146,6 +146,7 @@ void AEditorPlayer::Input()
     {
         IsF1Pressed = true;
         GEngineLoop.SetClearWorld(true);
+        GEngineLoop.SetIsInit(true);
         return;
     }
 
@@ -162,7 +163,6 @@ void AEditorPlayer::Input()
         if (FileName == nullptr)
         {
             tinyfd_messageBox("Error", "파일을 불러올 수 없습니다.", "ok", "error", 1);
-            ImGui::End();
             return;
         }
 
@@ -171,7 +171,6 @@ void AEditorPlayer::Input()
         if (!FSceneMgr::ParseSceneData(SceneFromJson))
         {
             tinyfd_messageBox("Error", "파일을 불러올 수 없습니다.", "ok", "error", 1);
-            ImGui::End();
             return;
         }
 
@@ -184,6 +183,8 @@ void AEditorPlayer::Input()
                 GEngineLoop.GetWorld()->GetRootOctree()->Insert(Comp);
             }
         }
+
+        GEngineLoop.SetIsInit(true);
     }
 }
 

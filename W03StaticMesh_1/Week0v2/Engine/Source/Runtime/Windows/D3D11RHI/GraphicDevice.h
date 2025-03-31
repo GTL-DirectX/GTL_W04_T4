@@ -7,6 +7,7 @@
 #include <d3d11.h>
 
 #include "EngineBaseTypes.h"
+#include "Container/Set.h"
 
 #include "Core/HAL/PlatformType.h"
 #include "Core/Math/Vector4.h"
@@ -47,16 +48,20 @@ public:
     void ReleaseRasterizerState();
     void ReleaseDepthStencilResources();
     void Release();
-    void SwapBuffer();
-    void Prepare();
-    void Prepare(D3D11_VIEWPORT* viewport);
+    void SwapBuffer() const;
+    void Prepare() const;
+    void PrepareZPrepass() const;
+    void SwitchRTV(ID3D11RenderTargetView* RTV) const;
+    //void Prepare(D3D11_VIEWPORT* viewport);
     void OnResize(HWND hWindow);
-    ID3D11RasterizerState* GetCurrentRasterizer() { return CurrentRasterizer; }
+    ID3D11RasterizerState* GetCurrentRasterizer() const { return CurrentRasterizer; }
     void ChangeRasterizer(EViewModeIndex evi);
-    void ChangeDepthStencilState(ID3D11DepthStencilState* newDetptStencil);
+    void ChangeDepthStencilState(ID3D11DepthStencilState* newDetptStencil) const;
 
-    uint32 GetPixelUUID(POINT pt);
-    uint32 DecodeUUIDColor(FVector4 UUIDColor);
+    //uint32 GetPixelUUID(POINT pt);
+    static uint32 DecodeUUIDColor(FVector4 UUIDColor);
+
+    TSet<uint32> GetRenderedUUIDs() const;
 private:
     ID3D11RasterizerState* CurrentRasterizer = nullptr;
 };

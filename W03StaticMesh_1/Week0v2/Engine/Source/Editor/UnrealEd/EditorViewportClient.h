@@ -159,6 +159,7 @@ public: //Camera Movement
     uint64 GetShowFlag() { return ShowFlag; }
     void SetShowFlag(uint64 newMode) { ShowFlag = newMode; }
     bool GetIsOnRBMouseClick() { return bRightMouseDown; }
+    bool GetIsMoved() { return bIsMoved; }
 
     //Flag Test Code
     static void SetOthoSize(float _Value);
@@ -170,7 +171,8 @@ public: //Camera Movement
 private: // Input
     POINT lastMousePos;
     bool bRightMouseDown = false;
-   
+
+    bool bIsMoved = false;
 
 public:
     void LoadConfig(const TMap<FString, FString>& config);
