@@ -14,7 +14,9 @@
 #include "Math/JungleMath.h"
 #include "Math/MathUtility.h"
 #include "PropertyEditor/ShowFlags.h"
+#include "tinyfiledialogs/tinyfiledialogs.h"
 #include "UnrealEd/EditorViewportClient.h"
+#include "UnrealEd/SceneMgr.h"
 #include "UObject/UObjectIterator.h"
 #include "Windows/FWindowsPlatformTime.h"
 
@@ -135,6 +137,52 @@ void AEditorPlayer::Input()
         {
             World->DestroyActor(PickedActor);
             World->SetPickedActor(nullptr);
+        }
+    }
+
+    static bool IsF1Pressed = false;
+
+    if ((GetAsyncKeyState(VK_F1) & 0x8000) && !IsF1Pressed)
+    {
+        IsF1Pressed = true;
+        GEngineLoop.SetClearWorld(true);
+        return;
+    }
+
+    if (!(GetAsyncKeyState(VK_F1) & 0x8000))
+    {
+        IsF1Pressed = false;
+    }
+
+    if (GetAsyncKeyState(VK_F2) & 0x8000) // Load Scene
+    {
+        char const * lFilterPatterns[1]={"*.scene"};
+        const char* FileName =  tinyfd_openFileDialog("Open Scene File", "", 1, lFilterPatterns,"Scene(.scene) file", 0);
+
+        if (FileName == nullptr)
+        {
+            tinyfd_messageBox("Error", "파일을 불러올 수 없습니다.", "ok", "error", 1);
+            ImGui::End();
+            return;
+        }
+
+        // TODO: Load Scene
+        FString SceneFromJson = FSceneMgr::LoadSceneFromFile(FileName);
+        if (!FSceneMgr::ParseSceneData(SceneFromJson))
+        {
+            tinyfd_messageBox("Error", "파일을 불러올 수 없습니다.", "ok", "error", 1);
+            ImGui::End();
+            return;
+        }
+
+        GEngineLoop.GetWorld()->ComputeWorldExtents();
+
+        for (auto Actor : GEngineLoop.GetWorld()->GetActors())
+        {
+            if (UStaticMeshComponent* Comp = Cast<UStaticMeshComponent>(Actor->GetRootComponent()))
+            {
+                GEngineLoop.GetWorld()->GetRootOctree()->Insert(Comp);
+            }
         }
     }
 }
