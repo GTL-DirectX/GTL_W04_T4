@@ -72,18 +72,18 @@ void FCameraFrustum::BuildFromView(FEditorViewportClient* ViewportCamera)
 
 bool FCameraFrustum::IntersectMesh(const FBoundingBox& Box) const
 {
-    for (int i = 0; i < 6; ++i)
+    for (const FPlane& Plane : Planes)
     {
-        const FPlane& Plane = Planes[i];
-        FVector PositiveVertex = Box.min;
-        if (Plane.A >= 0)
-            PositiveVertex.x = Box.max.x;
-        if (Plane.B >= 0)
-            PositiveVertex.y = Box.max.y;
-        if (Plane.C >= 0)
-            PositiveVertex.z = Box.max.z;
-        if (Plane.DistanceTo(PositiveVertex) < 0)
+        // P-Vertex와 N-Vertex 계산
+        FVector PVertex(
+        Plane.A >= 0 ? Box.max.x : Box.min.x,
+        Plane.B >= 0 ? Box.max.y : Box.min.y,
+        Plane.C >= 0 ? Box.max.z : Box.min.z
+        );
+        if (Plane.DistanceTo(PVertex) < 0)
+        {
             return false;
+        }
     }
     return true;
 }

@@ -1012,26 +1012,26 @@ void FRenderer::RenderBatch(
 
 void FRenderer::PrepareRender()
 {
-    for (const auto iter : TObjectRange<USceneComponent>())
-    {
-        if (UStaticMeshComponent* pStaticMeshComp = Cast<UStaticMeshComponent>(iter))
-        {
-            if (!Cast<UGizmoBaseComponent>(iter))
-                StaticMeshObjs.Add(pStaticMeshComp);
-        }
-        if (UGizmoBaseComponent* pGizmoComp = Cast<UGizmoBaseComponent>(iter))
-        {
-            GizmoObjs.Add(pGizmoComp);
-        }
-        if (UBillboardComponent* pBillboardComp = Cast<UBillboardComponent>(iter))
-        {
-            BillboardObjs.Add(pBillboardComp);
-        }
-        if (ULightComponentBase* pLightComp = Cast<ULightComponentBase>(iter))
-        {
-            LightObjs.Add(pLightComp);
-        }
-    }
+    // for (const auto iter : TObjectRange<USceneComponent>())
+    // {
+    //     if (UStaticMeshComponent* pStaticMeshComp = Cast<UStaticMeshComponent>(iter))
+    //     {
+    //         if (!Cast<UGizmoBaseComponent>(iter))
+    //             StaticMeshObjs.Add(pStaticMeshComp);
+    //     }
+    //     if (UGizmoBaseComponent* pGizmoComp = Cast<UGizmoBaseComponent>(iter))
+    //     {
+    //         GizmoObjs.Add(pGizmoComp);
+    //     }
+    //     if (UBillboardComponent* pBillboardComp = Cast<UBillboardComponent>(iter))
+    //     {
+    //         BillboardObjs.Add(pBillboardComp);
+    //     }
+    //     if (ULightComponentBase* pLightComp = Cast<ULightComponentBase>(iter))
+    //     {
+    //         LightObjs.Add(pLightComp);
+    //     }
+    // }
 }
 
 void FRenderer::ClearRenderArr()
@@ -1065,6 +1065,7 @@ void FRenderer::RenderStaticMeshes(UWorld* World, std::shared_ptr<FEditorViewpor
     FrustumCulling(ActiveViewport);
     PrepareShader();
     FScopeCycleCounter meshRenderTimer{ TEXT("StaticMesh") };
+    // UE_LOG(LogLevel::Display, "%d", StaticMeshObjs.Num());
     for (UStaticMeshComponent* StaticMeshComp : StaticMeshObjs)
     {
         FMatrix Model = JungleMath::CreateModelMatrix(
@@ -1084,14 +1085,14 @@ void FRenderer::RenderStaticMeshes(UWorld* World, std::shared_ptr<FEditorViewpor
         else
             UpdateConstant(MVP, NormalMatrix, UUIDColor, false);
 
-        if (USkySphereComponent* skysphere = Cast<USkySphereComponent>(StaticMeshComp))
-        {
-            UpdateTextureConstant(skysphere->UOffset, skysphere->VOffset);
-        }
-        else
-        {
-            UpdateTextureConstant(0, 0);
-        }
+        // if (USkySphereComponent* skysphere = Cast<USkySphereComponent>(StaticMeshComp))
+        // {
+        //     UpdateTextureConstant(skysphere->UOffset, skysphere->VOffset);
+        // }
+        // else
+        // {
+        // }
+        UpdateTextureConstant(0, 0);
 
         if (ActiveViewport->GetShowFlag() & static_cast<uint64>(EEngineShowFlags::SF_AABB))
         {
@@ -1220,31 +1221,14 @@ void FRenderer::RenderBillboards(UWorld* World, std::shared_ptr<FEditorViewportC
     PrepareShader();
 }
 
-void FRenderer::FrustumCulling(std::shared_ptr<FEditorViewportClient> ActiveViewport)
+void FRenderer::FrustumCulling(const std::shared_ptr<FEditorViewportClient>& ActiveViewport)
 {
     TArray<UStaticMeshComponent*> NewStaticMeshObjs;
 
     FScopeCycleCounter frustumCullingTimer{ TEXT("FrustumCulling") };
-    for (UStaticMeshComponent* StaticMesh : StaticMeshObjs)
-    {
-        if (!StaticMesh)
-            continue;
-
-        // Bounding Box
-        /*if (ActiveViewport->GetCameraFrustum().IntersectMesh(StaticMesh->GetWorldSpaceBoundingBox()))
-        {
-            NewStaticMeshObjs.Emplace(StaticMesh);
-        }*/
-
-        // Bounding Sphere
-        if (ActiveViewport->GetCameraFrustum().IntersectMesh(StaticMesh->GetWorldSpaceBoundingSphere()))
-        {
-            NewStaticMeshObjs.Emplace(StaticMesh);
-        }
-
-    }
-
-    //UE_LOG(LogLevel::Display, "FrustumCulling : %d -> %d", StaticMeshObjs.Num(), NewStaticMeshObjs.Num());
+    const FCameraFrustum& Frustum = ActiveViewport->GetCameraFrustum();
+    GEngineLoop.GetWorld()->GetRootOctree()->QueryFrustum(Frustum, NewStaticMeshObjs);
+    
     StaticMeshObjs = NewStaticMeshObjs;
 }
 

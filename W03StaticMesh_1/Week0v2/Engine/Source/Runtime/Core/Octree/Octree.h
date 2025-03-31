@@ -5,6 +5,8 @@
 #include "Define.h"
 #include "GameFramework/Actor.h"
 
+class FCameraFrustum;
+
 class Octree
 {
 public:
@@ -18,7 +20,7 @@ public:
     ~Octree() = default;
 
     // 새로운 액터를 Octree에 삽입합니다.
-    void Insert(AActor* Actor);
+    void Insert(UStaticMeshComponent* ActorComp);
 
     // 대기 중인 삽입 객체를 처리하는 등 트리를 업데이트합니다.
     void UpdateTree();
@@ -27,16 +29,19 @@ public:
     void BuildTree();
 
     // Ray 검사를 통해 검출된 액터를 반환합니다.
-    void QueryTree(const FVector& RayOrigin, const FVector& RayDirection, TArray<AActor*>& OutActors);
+    void QueryTree(const FVector& RayOrigin, const FVector& RayDirection, TArray<UStaticMeshComponent*>& OutActors);
+    // void QueryTreeWithBounds(const FRay& Ray, const FBoundingBox& Bounds, TArray<UStaticMeshComponent*>& OutActors);
 
-    void QueryTreeWithBounds(const FRay& Ray, const FBoundingBox& Bounds, TArray<AActor*>& OutActors);
+
+    // Frustum 검사를 통해 검출된 액터를 반환합니다.
+    void QueryFrustum(const FCameraFrustum& Frustum, TArray<UStaticMeshComponent*>& OutActors);
     
     // Tree를 초기화합니다.
     void ClearTree();
 
 private:
     // 내부용 생성자: 특정 영역과 액터 목록(InActors)을 사용해 Octree를 초기화합니다.
-    Octree(const FBoundingBox& InRegion, const TArray<AActor*>& InActors);
+    Octree(const FBoundingBox& InRegion, const TArray<UStaticMeshComponent*>& InActors);
 
     int GetOctant(const FVector& Center, const FVector& HalfSize) const;
 
@@ -46,8 +51,8 @@ public:
     // 현재 노드가 담당하는 영역(직육면체)
     FBoundingBox Region;
 
-    // 이 노드에 포함된 액터들
-    TArray<AActor*> Actors;
+    // 이 노드에 포함된 __액터__들 (StaticMeshComponent)
+    TArray<UStaticMeshComponent*> ActorComps;
  
     // 부모 노드(루트 노드라면 nullptr)
     Octree* Parent;
@@ -62,7 +67,7 @@ public:
     static uint32 Capacity;
     
     // 최소 영역 크기: 영역이 이 크기보다 작으면 더 이상 분할하지 않음 (예: 1x1x1 큐브)
-    static constexpr float MinSize = 0.01f;
+    static constexpr float MinSize = 8.0f;
 
     // 트리에 삽입해야 할 객체들이 남아있어 트리가 완전하지 않음을 표시
     static bool bReadyTree;

@@ -14,7 +14,9 @@
 #include "Math/JungleMath.h"
 #include "Math/MathUtility.h"
 #include "PropertyEditor/ShowFlags.h"
+#include "tinyfiledialogs/tinyfiledialogs.h"
 #include "UnrealEd/EditorViewportClient.h"
+#include "UnrealEd/SceneMgr.h"
 #include "UObject/UObjectIterator.h"
 #include "Windows/FWindowsPlatformTime.h"
 
@@ -137,6 +139,52 @@ void AEditorPlayer::Input()
             World->SetPickedActor(nullptr);
         }
     }
+
+    static bool IsF1Pressed = false;
+
+    if ((GetAsyncKeyState(VK_F1) & 0x8000) && !IsF1Pressed)
+    {
+        IsF1Pressed = true;
+        GEngineLoop.SetClearWorld(true);
+        return;
+    }
+
+    if (!(GetAsyncKeyState(VK_F1) & 0x8000))
+    {
+        IsF1Pressed = false;
+    }
+
+    if (GetAsyncKeyState(VK_F2) & 0x8000) // Load Scene
+    {
+        char const * lFilterPatterns[1]={"*.scene"};
+        const char* FileName =  tinyfd_openFileDialog("Open Scene File", "", 1, lFilterPatterns,"Scene(.scene) file", 0);
+
+        if (FileName == nullptr)
+        {
+            tinyfd_messageBox("Error", "파일을 불러올 수 없습니다.", "ok", "error", 1);
+            ImGui::End();
+            return;
+        }
+
+        // TODO: Load Scene
+        FString SceneFromJson = FSceneMgr::LoadSceneFromFile(FileName);
+        if (!FSceneMgr::ParseSceneData(SceneFromJson))
+        {
+            tinyfd_messageBox("Error", "파일을 불러올 수 없습니다.", "ok", "error", 1);
+            ImGui::End();
+            return;
+        }
+
+        GEngineLoop.GetWorld()->ComputeWorldExtents();
+
+        for (auto Actor : GEngineLoop.GetWorld()->GetActors())
+        {
+            if (UStaticMeshComponent* Comp = Cast<UStaticMeshComponent>(Actor->GetRootComponent()))
+            {
+                GEngineLoop.GetWorld()->GetRootOctree()->Insert(Comp);
+            }
+        }
+    }
 }
 
 bool AEditorPlayer::PickGizmo(FVector& pickPosition)
@@ -235,7 +283,7 @@ void AEditorPlayer::PickActor(const FVector& pickPosition, const FVector& PickDi
     if (!(ShowFlags::GetInstance().currentFlags & EEngineShowFlags::SF_Primitives)) return;
 
 
-    TArray<AActor*> CandidateActors;
+    TArray<UStaticMeshComponent*> CandidateActors;
     GetWorld()->GetRootOctree()->QueryTree(pickPosition, PickDirection, CandidateActors);
     
     const UActorComponent* Possible = nullptr;
@@ -244,27 +292,21 @@ void AEditorPlayer::PickActor(const FVector& pickPosition, const FVector& PickDi
     
     for (const auto iter : CandidateActors)
     {
-        UPrimitiveComponent* pObj = Cast<UPrimitiveComponent>(iter->GetRootComponent());
-        if (!pObj || pObj->IsA<UGizmoBaseComponent>())
-        {
-            continue;
-        }
-        
         float Distance = 0.0f;
         int currentIntersectCount = 0;
         
-        if (RayIntersectsObject(pickPosition, pObj, Distance, currentIntersectCount))
+        if (RayIntersectsObject(pickPosition, iter, Distance, currentIntersectCount))
         {
             if (Distance < minDistance)
             {
                 minDistance = Distance;
                 maxIntersect = currentIntersectCount;
-                Possible = pObj;
+                Possible = iter;
             }
             else if (abs(Distance - minDistance) < FLT_EPSILON && currentIntersectCount > maxIntersect)
             {
                 maxIntersect = currentIntersectCount;
-                Possible = pObj;
+                Possible = iter;
             }
         }
     }
@@ -280,36 +322,29 @@ void AEditorPlayer::PickActor(const FRay& Ray)
     if (!(ShowFlags::GetInstance().currentFlags & EEngineShowFlags::SF_Primitives)) return;
 
     HitResult BestHit;
-
-    TArray<AActor*> CandidateActors;
+    TArray<UStaticMeshComponent*> CandidateActors;
 
     GetWorld()->GetRootOctree()->QueryTree(Ray.Origin, Ray.Direction, CandidateActors);
-    
-    // std::cout << "Candidate: " << CandidateActors.Num() << std::endl;
+
     std::for_each(std::execution::par_unseq,
-        CandidateActors.begin(), 
+        CandidateActors.begin(),
         CandidateActors.end(),
-    [&](const AActor* Actor) {
-        if (UPrimitiveComponent* pObj = Cast<UPrimitiveComponent>(Actor->GetRootComponent()))
-        {
-            // if (pObj->IsA<UGizmoBaseComponent>()) return; // 기즈모 안뜸
-            
+        [&](UStaticMeshComponent* Comp) { // UStaticMeshComponent*
             float Distance;
             int IntersectCount;
-            if (RayIntersectsObject(Ray, pObj, Distance, IntersectCount))
+            if (RayIntersectsObject(Ray, Comp, Distance, IntersectCount)) // pObj 대신 Comp 직접 사용
             {
                 std::lock_guard<std::mutex> lock(ResultMutex);
-                if (Distance < BestHit.Distance || 
-                    (abs(Distance - BestHit.Distance) < FLT_EPSILON && 
+                if (Distance < BestHit.Distance ||
+                    (abs(Distance - BestHit.Distance) < FLT_EPSILON &&
                      IntersectCount > BestHit.IntersectCount))
                 {
-                    BestHit.Component = pObj;
+                    BestHit.Component = Comp; // pObj 대신 Comp
                     BestHit.Distance = Distance;
                     BestHit.IntersectCount = IntersectCount;
                 }
             }
-        }
-    });
+        });
 
     if (BestHit.Component)
     {

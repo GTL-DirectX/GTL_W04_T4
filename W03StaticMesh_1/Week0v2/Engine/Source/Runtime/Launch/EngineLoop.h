@@ -47,9 +47,11 @@ private:
     bool bIsExit = false;
     const int32 targetFPS = 240;
     bool bTestInput = false;
+    bool bClearWorld = false;
 
 public:
     UWorld* GetWorld() const { return GWorld; }
     SLevelEditor* GetLevelEditor() const { return LevelEditor; }
     UnrealEd* GetUnrealEditor() const { return UnrealEditor; }
+    void SetClearWorld(bool NewState) { bClearWorld = NewState; }
 };

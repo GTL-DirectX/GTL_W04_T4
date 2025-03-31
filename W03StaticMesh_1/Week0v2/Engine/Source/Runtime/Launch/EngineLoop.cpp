@@ -187,22 +187,30 @@ void FEngineLoop::Tick()
         }
 
         Input();
-        GWorld->Tick(elapsedTime);
-        LevelEditor->Tick(elapsedTime);
         if (GWorld)
+        {
+            GWorld->Tick(elapsedTime);
+            LevelEditor->Tick(elapsedTime);
             Render();
-        UIMgr->BeginFrame();
-        UnrealEditor->Render();
+            UIMgr->BeginFrame();
+            UnrealEditor->Render();
 
-        Console::GetInstance().Draw();
+            Console::GetInstance().Draw();
 
-        UIMgr->EndFrame();
+            UIMgr->EndFrame();
 
-        // Pending 처리된 오브젝트 제거
-        GUObjectArray.ProcessPendingDestroyObjects();
+            // Pending 처리된 오브젝트 제거
+            GUObjectArray.ProcessPendingDestroyObjects();
 
-        graphicDevice.SwapBuffer();
-
+            graphicDevice.SwapBuffer();
+        }
+        
+        if (bClearWorld)
+        {
+            CreateNewWorld();
+            bClearWorld = false;
+        }
+        
         uint64_t currentCycles;
         do
         {
