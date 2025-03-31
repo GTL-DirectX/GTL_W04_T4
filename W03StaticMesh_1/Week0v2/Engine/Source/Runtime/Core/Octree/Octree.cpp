@@ -167,10 +167,7 @@ void Octree::QueryFrustum(const FCameraFrustum& Frustum, TArray<UStaticMeshCompo
     // Leaf 노드면 액터 검사
     for (auto Comp : ActorComps)
     {
-        if (Comp && Frustum.IntersectMesh(Comp->GetWorldSpaceBoundingBox()))
-        {
-            OutComponents.Add(Comp);
-        }
+        OutComponents.Add(Comp);
     }
 
     // 자식 노드 탐색

@@ -1084,14 +1084,14 @@ void FRenderer::RenderStaticMeshes(UWorld* World, std::shared_ptr<FEditorViewpor
         else
             UpdateConstant(MVP, NormalMatrix, UUIDColor, false);
 
-        if (USkySphereComponent* skysphere = Cast<USkySphereComponent>(StaticMeshComp))
-        {
-            UpdateTextureConstant(skysphere->UOffset, skysphere->VOffset);
-        }
-        else
-        {
-            UpdateTextureConstant(0, 0);
-        }
+        // if (USkySphereComponent* skysphere = Cast<USkySphereComponent>(StaticMeshComp))
+        // {
+        //     UpdateTextureConstant(skysphere->UOffset, skysphere->VOffset);
+        // }
+        // else
+        // {
+        // }
+        UpdateTextureConstant(0, 0);
 
         if (ActiveViewport->GetShowFlag() & static_cast<uint64>(EEngineShowFlags::SF_AABB))
         {
