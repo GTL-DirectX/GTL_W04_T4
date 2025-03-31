@@ -158,24 +158,26 @@ void Octree::QueryTree(const FVector& RayOrigin, const FVector& RayDirection, TA
 
 void Octree::QueryFrustum(const FCameraFrustum& Frustum, TArray<UStaticMeshComponent*>& OutComponents)
 {
-    // 현재 노드의 느슨한 영역이 프러스텀과 교차하는지 확인
+    // 느슨한 영역으로 초기 필터링
     if (!Frustum.IntersectMesh(GetLooseRegion()))
     {
         return;
     }
 
-    // Leaf 노드면 액터 검사
-    for (auto Comp : ActorComps)
-    {
-        OutComponents.Add(Comp);
-    }
-
-    // 자식 노드 탐색
+    // Leaf 노드에서만 객체 추가 + 프러스텀 교차 검사
     if (!Children[0])
     {
+        for (auto Comp : ActorComps)
+        {
+            if (Comp && Frustum.IntersectMesh(Comp->GetWorldSpaceBoundingBox()))
+            {
+                OutComponents.Add(Comp);
+            }
+        }
         return;
     }
 
+    // 자식 노드 탐색
     for (const auto& Child : Children)
     {
         if (Child)

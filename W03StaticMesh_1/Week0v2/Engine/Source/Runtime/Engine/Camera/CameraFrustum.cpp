@@ -76,9 +76,9 @@ bool FCameraFrustum::IntersectMesh(const FBoundingBox& Box) const
     {
         // P-Vertex와 N-Vertex 계산
         FVector PVertex(
-            Plane.A > 0 ? Box.min.x : Box.max.x,
-            Plane.B > 0 ? Box.min.y : Box.max.y,
-            Plane.C > 0 ? Box.min.z : Box.max.z
+        Plane.A >= 0 ? Box.max.x : Box.min.x,
+        Plane.B >= 0 ? Box.max.y : Box.min.y,
+        Plane.C >= 0 ? Box.max.z : Box.min.z
         );
         if (Plane.DistanceTo(PVertex) < 0)
         {
