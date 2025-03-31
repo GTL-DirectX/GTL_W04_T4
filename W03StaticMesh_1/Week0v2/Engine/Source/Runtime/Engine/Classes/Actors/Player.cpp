@@ -235,7 +235,7 @@ void AEditorPlayer::PickActor(const FVector& pickPosition, const FVector& PickDi
     if (!(ShowFlags::GetInstance().currentFlags & EEngineShowFlags::SF_Primitives)) return;
 
 
-    TArray<AActor*> CandidateActors;
+    TArray<UStaticMeshComponent*> CandidateActors;
     GetWorld()->GetRootOctree()->QueryTree(pickPosition, PickDirection, CandidateActors);
     
     const UActorComponent* Possible = nullptr;
@@ -244,27 +244,21 @@ void AEditorPlayer::PickActor(const FVector& pickPosition, const FVector& PickDi
     
     for (const auto iter : CandidateActors)
     {
-        UPrimitiveComponent* pObj = Cast<UPrimitiveComponent>(iter->GetRootComponent());
-        if (!pObj || pObj->IsA<UGizmoBaseComponent>())
-        {
-            continue;
-        }
-        
         float Distance = 0.0f;
         int currentIntersectCount = 0;
         
-        if (RayIntersectsObject(pickPosition, pObj, Distance, currentIntersectCount))
+        if (RayIntersectsObject(pickPosition, iter, Distance, currentIntersectCount))
         {
             if (Distance < minDistance)
             {
                 minDistance = Distance;
                 maxIntersect = currentIntersectCount;
-                Possible = pObj;
+                Possible = iter;
             }
             else if (abs(Distance - minDistance) < FLT_EPSILON && currentIntersectCount > maxIntersect)
             {
                 maxIntersect = currentIntersectCount;
-                Possible = pObj;
+                Possible = iter;
             }
         }
     }
@@ -280,36 +274,29 @@ void AEditorPlayer::PickActor(const FRay& Ray)
     if (!(ShowFlags::GetInstance().currentFlags & EEngineShowFlags::SF_Primitives)) return;
 
     HitResult BestHit;
-
-    TArray<AActor*> CandidateActors;
+    TArray<UStaticMeshComponent*> CandidateActors;
 
     GetWorld()->GetRootOctree()->QueryTree(Ray.Origin, Ray.Direction, CandidateActors);
-    
-    // std::cout << "Candidate: " << CandidateActors.Num() << std::endl;
+
     std::for_each(std::execution::par_unseq,
-        CandidateActors.begin(), 
+        CandidateActors.begin(),
         CandidateActors.end(),
-    [&](const AActor* Actor) {
-        if (UPrimitiveComponent* pObj = Cast<UPrimitiveComponent>(Actor->GetRootComponent()))
-        {
-            // if (pObj->IsA<UGizmoBaseComponent>()) return; // 기즈모 안뜸
-            
+        [&](UStaticMeshComponent* Comp) { // UStaticMeshComponent*
             float Distance;
             int IntersectCount;
-            if (RayIntersectsObject(Ray, pObj, Distance, IntersectCount))
+            if (RayIntersectsObject(Ray, Comp, Distance, IntersectCount)) // pObj 대신 Comp 직접 사용
             {
                 std::lock_guard<std::mutex> lock(ResultMutex);
-                if (Distance < BestHit.Distance || 
-                    (abs(Distance - BestHit.Distance) < FLT_EPSILON && 
+                if (Distance < BestHit.Distance ||
+                    (abs(Distance - BestHit.Distance) < FLT_EPSILON &&
                      IntersectCount > BestHit.IntersectCount))
                 {
-                    BestHit.Component = pObj;
+                    BestHit.Component = Comp; // pObj 대신 Comp
                     BestHit.Distance = Distance;
                     BestHit.IntersectCount = IntersectCount;
                 }
             }
-        }
-    });
+        });
 
     if (BestHit.Component)
     {
