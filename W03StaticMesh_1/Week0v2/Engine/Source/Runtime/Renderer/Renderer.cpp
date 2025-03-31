@@ -1012,26 +1012,26 @@ void FRenderer::RenderBatch(
 
 void FRenderer::PrepareRender()
 {
-    for (const auto iter : TObjectRange<USceneComponent>())
-    {
-        if (UStaticMeshComponent* pStaticMeshComp = Cast<UStaticMeshComponent>(iter))
-        {
-            if (!Cast<UGizmoBaseComponent>(iter))
-                StaticMeshObjs.Add(pStaticMeshComp);
-        }
-        if (UGizmoBaseComponent* pGizmoComp = Cast<UGizmoBaseComponent>(iter))
-        {
-            GizmoObjs.Add(pGizmoComp);
-        }
-        if (UBillboardComponent* pBillboardComp = Cast<UBillboardComponent>(iter))
-        {
-            BillboardObjs.Add(pBillboardComp);
-        }
-        if (ULightComponentBase* pLightComp = Cast<ULightComponentBase>(iter))
-        {
-            LightObjs.Add(pLightComp);
-        }
-    }
+    // for (const auto iter : TObjectRange<USceneComponent>())
+    // {
+    //     if (UStaticMeshComponent* pStaticMeshComp = Cast<UStaticMeshComponent>(iter))
+    //     {
+    //         if (!Cast<UGizmoBaseComponent>(iter))
+    //             StaticMeshObjs.Add(pStaticMeshComp);
+    //     }
+    //     if (UGizmoBaseComponent* pGizmoComp = Cast<UGizmoBaseComponent>(iter))
+    //     {
+    //         GizmoObjs.Add(pGizmoComp);
+    //     }
+    //     if (UBillboardComponent* pBillboardComp = Cast<UBillboardComponent>(iter))
+    //     {
+    //         BillboardObjs.Add(pBillboardComp);
+    //     }
+    //     if (ULightComponentBase* pLightComp = Cast<ULightComponentBase>(iter))
+    //     {
+    //         LightObjs.Add(pLightComp);
+    //     }
+    // }
 }
 
 void FRenderer::ClearRenderArr()
@@ -1065,6 +1065,7 @@ void FRenderer::RenderStaticMeshes(UWorld* World, std::shared_ptr<FEditorViewpor
     FrustumCulling(ActiveViewport);
     PrepareShader();
     FScopeCycleCounter meshRenderTimer{ TEXT("StaticMesh") };
+    // UE_LOG(LogLevel::Display, "%d", StaticMeshObjs.Num());
     for (UStaticMeshComponent* StaticMeshComp : StaticMeshObjs)
     {
         FMatrix Model = JungleMath::CreateModelMatrix(

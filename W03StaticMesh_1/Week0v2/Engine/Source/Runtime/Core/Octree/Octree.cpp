@@ -6,7 +6,7 @@
 
 bool Octree::bReadyTree = false;
 bool Octree::bBuildTree = false;
-uint32 Octree::Capacity = 255;
+uint32 Octree::Capacity = 127;
 
 Octree::Octree() : Parent(nullptr), ActiveNodeMask(0)
 {
