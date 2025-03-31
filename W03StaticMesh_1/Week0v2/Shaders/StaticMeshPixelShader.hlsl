@@ -109,12 +109,15 @@ PS_OUTPUT mainPS(PS_INPUT input)
     
     float3 texColor = Textures.Sample(Sampler, input.texcoord + UVOffset);
     float3 color;
-    if (texColor.g == 0) // TODO: boolean으로 변경
-        color = saturate(Material.DiffuseColor);
-    else
-    {
+    // TODO: boolean으로 변경
+    //if (texColor.g == 0)
+    //{
+    //    color = saturate(Material.DiffuseColor
+    //}
+    //else
+    //{
         color = texColor + Material.DiffuseColor;
-    }
+    //}
     
     if (isSelected)
     {
@@ -125,36 +128,36 @@ PS_OUTPUT mainPS(PS_INPUT input)
     
     // 발광 색상 추가
 
-    if (IsLit == 1) // 조명이 적용되는 경우
-    {
-        if (input.normalFlag > 0.5)
-        {
-            float3 N = normalize(input.normal);
-            float3 L = normalize(LightDirection);
-            
-            // 기본 디퓨즈 계산
-            float diffuse = saturate(dot(N, L));
-            
-            // 스페큘러 계산 (간단한 Blinn-Phong)
-            float3 V = float3(0, 0, 1); // 카메라가 Z 방향을 향한다고 가정
-            float3 H = normalize(L + V);
-            float specular = pow(saturate(dot(N, H)), Material.SpecularScalar * 32) * Material.SpecularScalar;
-            
-            // 최종 라이팅 계산
-            float3 ambient = Material.AmbientColor * AmbientFactor;
-            float3 diffuseLight = diffuse * LightColor;
-            float3 specularLight = specular * Material.SpecularColor * LightColor;
-            
-            color = ambient + (diffuseLight * color) + specularLight;
-        }
-        
-        // 투명도 적용
-        color += Material.EmissiveColor;
-        output.color = float4(color, Material.TransparencyScalar);
-        return output;
-    }
-    else // unlit 상태일 때 PaperTexture 효과 적용
-    {
+    //if (IsLit == 1) // 조명이 적용되는 경우
+    //{
+    //    if (input.normalFlag > 0.5)
+    //    {
+    //        float3 N = normalize(input.normal);
+    //        float3 L = normalize(LightDirection);
+    //        
+    //        // 기본 디퓨즈 계산
+    //        float diffuse = saturate(dot(N, L));
+    //        
+    //        // 스페큘러 계산 (간단한 Blinn-Phong)
+    //        float3 V = float3(0, 0, 1); // 카메라가 Z 방향을 향한다고 가정
+    //        float3 H = normalize(L + V);
+    //        float specular = pow(saturate(dot(N, H)), Material.SpecularScalar * 32) * Material.SpecularScalar;
+    //        
+    //        // 최종 라이팅 계산
+    //        float3 ambient = Material.AmbientColor * AmbientFactor;
+    //        float3 diffuseLight = diffuse * LightColor;
+    //        float3 specularLight = specular * Material.SpecularColor * LightColor;
+    //        
+    //        color = ambient + (diffuseLight * color) + specularLight;
+    //    }
+    //    
+    //    // 투명도 적용
+    //    color += Material.EmissiveColor;
+    //    output.color = float4(color, Material.TransparencyScalar);
+    //    return output;
+    //}
+    //else // unlit 상태일 때 PaperTexture 효과 적용
+    //{
         if (input.normalFlag < 0.5)
         {
             output.color = float4(color, Material.TransparencyScalar);
@@ -166,5 +169,5 @@ PS_OUTPUT mainPS(PS_INPUT input)
         output.color.a = Material.TransparencyScalar;
             
         return output;
-    }
+    //}
 }

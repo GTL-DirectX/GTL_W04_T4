@@ -120,12 +120,9 @@ void ControlEditorPanel::CreateMenuButton(ImVec2 ButtonSize, ImFont* IconFont)
 
             GEngineLoop.GetWorld()->ComputeWorldExtents();
 
-            for (auto Actor : GEngineLoop.GetWorld()->GetActors())
+            for (auto Actor : GEngineLoop.GetWorld()->GetActors().Array())
             {
-                if (UStaticMeshComponent* Comp = Cast<UStaticMeshComponent>(Actor->GetRootComponent()))
-                {
-                    GEngineLoop.GetWorld()->GetRootOctree()->Insert(Comp);
-                }
+                GEngineLoop.GetWorld()->GetRootOctree()->Insert(Actor);
             }
 
             

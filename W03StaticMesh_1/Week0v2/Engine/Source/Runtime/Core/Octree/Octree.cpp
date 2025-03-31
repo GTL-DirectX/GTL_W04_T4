@@ -1,9 +1,6 @@
 ﻿#include "Octree.h"
 
-#include <mutex>
-
 #include "Camera/CameraFrustum.h"
-#include "Components/PrimitiveComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Math/JungleMath.h"
 
