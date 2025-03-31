@@ -95,6 +95,7 @@ void ControlEditorPanel::CreateMenuButton(ImVec2 ButtonSize, ImFont* IconFont)
         {
             // TODO: New Scene
             GEngineLoop.CreateNewWorld();
+            GEngineLoop.SetIsInit(true);
         }
 
         if (ImGui::MenuItem("Load Scene"))
@@ -130,6 +131,7 @@ void ControlEditorPanel::CreateMenuButton(ImVec2 ButtonSize, ImFont* IconFont)
 
             
             bOpenMenu = false;
+            GEngineLoop.SetIsInit(true);
         }
 
         // ImGui::Separator();
@@ -382,34 +384,34 @@ void ControlEditorPanel::CreateFlagButton() const
 
     ImGui::SameLine();
     
-    const char* ViewModeNames[] = { "Lit", "Unlit", "Wireframe" };
-    FString SelectLightControl = ViewModeNames[(int)ActiveViewport->GetViewMode()];
-    ImVec2 LightTextSize = ImGui::CalcTextSize(GetData(SelectLightControl));
-    
-    if (ImGui::Button(GetData(SelectLightControl), ImVec2(30 + LightTextSize.x, 32)))
-    {
-        ImGui::OpenPopup("LightControl");
-    }
+    //const char* ViewModeNames[] = { "Lit", "Unlit", "Wireframe" };
+    //FString SelectLightControl = ViewModeNames[(int)ActiveViewport->GetViewMode()];
+    //ImVec2 LightTextSize = ImGui::CalcTextSize(GetData(SelectLightControl));
+    //
+    //if (ImGui::Button(GetData(SelectLightControl), ImVec2(30 + LightTextSize.x, 32)))
+    //{
+    //    ImGui::OpenPopup("LightControl");
+    //}
 
-    if (ImGui::BeginPopup("LightControl"))
-    {
-        for (int i = 0; i < IM_ARRAYSIZE(ViewModeNames); i++)
-        {
-            bool bIsSelected = ((int)ActiveViewport->GetViewMode() == i);
-            if (ImGui::Selectable(ViewModeNames[i], bIsSelected))
-            {
-                ActiveViewport->SetViewMode((EViewModeIndex)i);
-                FEngineLoop::graphicDevice.ChangeRasterizer(ActiveViewport->GetViewMode());
-                FEngineLoop::renderer.ChangeViewMode(ActiveViewport->GetViewMode());
-            }
+    //if (ImGui::BeginPopup("LightControl"))
+    //{
+    //    for (int i = 0; i < IM_ARRAYSIZE(ViewModeNames); i++)
+    //    {
+    //        bool bIsSelected = ((int)ActiveViewport->GetViewMode() == i);
+    //        if (ImGui::Selectable(ViewModeNames[i], bIsSelected))
+    //        {
+    //            ActiveViewport->SetViewMode((EViewModeIndex)i);
+    //            FEngineLoop::graphicDevice.ChangeRasterizer(ActiveViewport->GetViewMode());
+    //            FEngineLoop::renderer.ChangeViewMode(ActiveViewport->GetViewMode());
+    //        }
 
-            if (bIsSelected)
-            {
-                ImGui::SetItemDefaultFocus();
-            }
-        }
-        ImGui::EndPopup();
-    }
+    //        if (bIsSelected)
+    //        {
+    //            ImGui::SetItemDefaultFocus();
+    //        }
+    //    }
+    //    ImGui::EndPopup();
+    //}
 
     ImGui::SameLine();
     
@@ -524,6 +526,7 @@ void ControlEditorPanel::CreatePerformanceOverlay()
     int numAttempts = 0;
     double accumulatedTime = 0.0f;
     double meshRenderingTime = 0.0f;
+    double uuidRenderingTime = 0.0f;
     double frustumCulling = 0.0f;
 
     if (FWindowsPlatformTime::TimeMap.Contains(TEXT("Fps")))
@@ -546,6 +549,11 @@ void ControlEditorPanel::CreatePerformanceOverlay()
     if (FWindowsPlatformTime::TimeMap.Contains(TEXT("StaticMesh")))
     {
         meshRenderingTime = FWindowsPlatformTime::TimeMap[TEXT("StaticMesh")];
+    }
+
+    if (FWindowsPlatformTime::TimeMap.Contains(TEXT("UUIDs")))
+    {
+        uuidRenderingTime = FWindowsPlatformTime::TimeMap[TEXT("UUIDs")];
     }
 
     if (FWindowsPlatformTime::TimeMap.Contains(TEXT("FrustumCulling")))
@@ -572,6 +580,7 @@ void ControlEditorPanel::CreatePerformanceOverlay()
         ImGui::Text("Num Attempts : %d", numAttempts);
         ImGui::Text("Accumulated Time : %.2f ms", accumulatedTime);
         ImGui::Text("Static Mesh Render : %.5f ms", meshRenderingTime);
+        ImGui::Text("UUIDs Render : %.5f ms", uuidRenderingTime);
         ImGui::Text("Frustum Culling : %.5f ms", frustumCulling);
         ImGui::PopStyleColor();
         ImGui::End();

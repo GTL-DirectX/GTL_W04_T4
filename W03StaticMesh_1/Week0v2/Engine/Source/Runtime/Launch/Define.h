@@ -23,10 +23,10 @@ class UActorComponent;
 struct FVertexSimple
 {
     float x, y, z;    // Position
-    float r, g, b, a; // Color
-    float nx, ny, nz;
+    //float r, g, b, a; // Color
+    //float nx, ny, nz;
     float u=0, v=0;
-    uint32 MaterialIndex;
+    //uint32 MaterialIndex;
 };
 
 // Material Subset
@@ -366,40 +366,44 @@ struct FPrimitiveCounts
 	int ConeCount; 
 	int pad1;
 };
-struct FLighting
-{
-	float lightDirX, lightDirY, lightDirZ; // 조명 방향
-	float pad1;                      // 16바이트 정렬용 패딩
-	float lightColorX, lightColorY, lightColorZ;    // 조명 색상
-	float pad2;                      // 16바이트 정렬용 패딩
-	float AmbientFactor;             // ambient 계수
-	float pad3; // 16바이트 정렬 맞춤 추가 패딩
-	float pad4; // 16바이트 정렬 맞춤 추가 패딩
-	float pad5; // 16바이트 정렬 맞춤 추가 패딩
-};
+//struct FLighting
+//{
+//	float lightDirX, lightDirY, lightDirZ; // 조명 방향
+//	float pad1;                      // 16바이트 정렬용 패딩
+//	float lightColorX, lightColorY, lightColorZ;    // 조명 색상
+//	float pad2;                      // 16바이트 정렬용 패딩
+//	float AmbientFactor;             // ambient 계수
+//	float pad3; // 16바이트 정렬 맞춤 추가 패딩
+//	float pad4; // 16바이트 정렬 맞춤 추가 패딩
+//	float pad5; // 16바이트 정렬 맞춤 추가 패딩
+//};
 
-struct FMaterialConstants {
-    FVector DiffuseColor;
-    float TransparencyScalar;
-    FVector AmbientColor;
-    float DensityScalar;
-    FVector SpecularColor;
-    float SpecularScalar;
-    FVector EmmisiveColor;
-    float MaterialPad0;
-};
+//struct FMaterialConstants {
+//    FVector DiffuseColor;
+//    float TransparencyScalar;
+//    FVector AmbientColor;
+//    float DensityScalar;
+//    FVector SpecularColor;
+//    float SpecularScalar;
+//    FVector EmmisiveColor;
+//    float MaterialPad0;
+//};
 
 struct FConstants {
     FMatrix MVP;      // 모델
-    FMatrix ModelMatrixInverseTranspose; // normal 변환을 위한 행렬
-    FVector4 UUIDColor;
+    //FMatrix ModelMatrixInverseTranspose; // normal 변환을 위한 행렬
+    //FVector4 UUIDColor;
     bool IsSelected;
     FVector pad;
 };
-struct FLitUnlitConstants {
-    int isLit; // 1 = Lit, 0 = Unlit 
-    FVector pad;
+struct FUUIDConstants {
+    FMatrix MVP;
+    FVector4 UUIDColor;
 };
+//struct FLitUnlitConstants {
+//    int isLit; // 1 = Lit, 0 = Unlit 
+//    FVector pad;
+//};
 
 struct FSubMeshConstants {
     float isSelectedSubMesh;

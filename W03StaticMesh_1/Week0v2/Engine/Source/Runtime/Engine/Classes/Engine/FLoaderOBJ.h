@@ -418,7 +418,9 @@ struct FLoaderOBJ
                 vertex.x = RawData.Vertices[vIdx].x;
                 vertex.y = RawData.Vertices[vIdx].y;
                 vertex.z = RawData.Vertices[vIdx].z;
-                vertex.r = 1.0f; vertex.g = 1.0f; vertex.b = 1.0f; vertex.a = 1.0f; // 기본 색상
+
+                //@Note: Color 값은 사용 안함 (Texcoord만 사용)
+                //vertex.r = 1.0f; vertex.g = 1.0f; vertex.b = 1.0f; vertex.a = 1.0f; // 기본 색상
 
                 if (tIdx != UINT32_MAX && tIdx < RawData.UVs.Num())
                 {
@@ -426,13 +428,15 @@ struct FLoaderOBJ
                     vertex.v = -RawData.UVs[tIdx].y;
                 }
 
-                if (nIdx != UINT32_MAX && nIdx < RawData.Normals.Num())
-                {
-                    vertex.nx = RawData.Normals[nIdx].x;
-                    vertex.ny = RawData.Normals[nIdx].y;
-                    vertex.nz = RawData.Normals[nIdx].z;
-                }
+                //@Note: Normal 값은 사용 안함
+                //if (nIdx != UINT32_MAX && nIdx < RawData.Normals.Num())
+                //{
+                //    vertex.nx = RawData.Normals[nIdx].x;
+                //    vertex.ny = RawData.Normals[nIdx].y;
+                //    vertex.nz = RawData.Normals[nIdx].z;
+                //}
 
+                //@Note: Material Index는 사용 안함 (라이팅 적용 없음)
                 //for (int32 j = 0; j < OutStaticMesh.MaterialSubsets.Num(); j++)
                 //{
                 //    const FMaterialSubset& subset = OutStaticMesh.MaterialSubsets[j];
@@ -445,18 +449,18 @@ struct FLoaderOBJ
 
                 // 현재 인덱스 i가 어느 MaterialSubset 범위에 속하는지 결정
                 // 반복문을 매번 전체 순회하는 대신, currentSubsetIndex를 유지하며 범위를 벗어나면 증가시킵니다.
-                while (currentSubsetIndex < OutStaticMesh.MaterialSubsets.Num() &&
-                    i >= OutStaticMesh.MaterialSubsets[currentSubsetIndex].IndexStart +
-                    OutStaticMesh.MaterialSubsets[currentSubsetIndex].IndexCount)
-                {
-                    currentSubsetIndex++;
-                }
-                if (currentSubsetIndex < OutStaticMesh.MaterialSubsets.Num())
-                {
-                    vertex.MaterialIndex = OutStaticMesh.MaterialSubsets[currentSubsetIndex].MaterialIndex;
-                }
-                else
-                    vertex.MaterialIndex = 0;
+                //while (currentSubsetIndex < OutStaticMesh.MaterialSubsets.Num() &&
+                //    i >= OutStaticMesh.MaterialSubsets[currentSubsetIndex].IndexStart +
+                //    OutStaticMesh.MaterialSubsets[currentSubsetIndex].IndexCount)
+                //{
+                //    currentSubsetIndex++;
+                //}
+                //if (currentSubsetIndex < OutStaticMesh.MaterialSubsets.Num())
+                //{
+                //    vertex.MaterialIndex = OutStaticMesh.MaterialSubsets[currentSubsetIndex].MaterialIndex;
+                //}
+                //else
+                //    vertex.MaterialIndex = 0;
                 
                 index = OutStaticMesh.Vertices.Num();
                 OutStaticMesh.Vertices.Add(vertex);
@@ -468,7 +472,6 @@ struct FLoaderOBJ
             }
 
             OutStaticMesh.Indices.Add(index);
-            
         }
 
         // Calculate StaticMesh BoundingBox
@@ -482,7 +485,6 @@ struct FLoaderOBJ
 
     static bool CreateTextureFromFile(const FWString& Filename)
     {
-        
         if (FEngineLoop::resourceMgr.GetTexture(Filename))
         {
             return true;
@@ -543,12 +545,14 @@ public:
     static OBJ::FStaticMeshRenderData* LoadObjStaticMeshAsset(const FString& PathFileName)
     {
         OBJ::FStaticMeshRenderData* NewStaticMesh = new OBJ::FStaticMeshRenderData();
-        
+
+        // Check StaticMeshMap
         if ( const auto It = ObjStaticMeshMap.Find(PathFileName))
         {
             return *It;
         }
-        
+
+        // Check Binary
         FWString BinaryPath = (PathFileName + ".bin").ToWideString();
         if (std::ifstream(BinaryPath).good())
         {
@@ -562,7 +566,6 @@ public:
         // Parse OBJ
         FObjInfo NewObjInfo;
         bool Result = FLoaderOBJ::ParseOBJ(PathFileName, NewObjInfo);
-
         if (!Result)
         {
             delete NewStaticMesh;
@@ -573,7 +576,6 @@ public:
         if (NewObjInfo.MaterialSubsets.Num() > 0)
         {
             Result = FLoaderOBJ::ParseMaterial(NewObjInfo, *NewStaticMesh);
-
             if (!Result)
             {
                 delete NewStaticMesh;
@@ -582,7 +584,8 @@ public:
 
             CombineMaterialIndex(*NewStaticMesh);
 
-            for (int materialIndex = 0; materialIndex < NewStaticMesh->Materials.Num(); materialIndex++) {
+            for (int materialIndex = 0; materialIndex < NewStaticMesh->Materials.Num(); materialIndex++)
+            {
                 CreateMaterial(NewStaticMesh->Materials[materialIndex]);
             }
         }
@@ -596,7 +599,9 @@ public:
         }
 
         SaveStaticMeshToBinary(BinaryPath, *NewStaticMesh);
+
         ObjStaticMeshMap.Add(PathFileName, NewStaticMesh);
+
         return NewStaticMesh;
     }
     

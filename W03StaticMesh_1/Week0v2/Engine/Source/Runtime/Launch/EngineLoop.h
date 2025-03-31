@@ -49,9 +49,19 @@ private:
     bool bTestInput = false;
     bool bClearWorld = false;
 
+    bool bIsInit = false;
+    bool bIsMoving = true;
+    bool bIsMoved = false;
+
 public:
     UWorld* GetWorld() const { return GWorld; }
     SLevelEditor* GetLevelEditor() const { return LevelEditor; }
     UnrealEd* GetUnrealEditor() const { return UnrealEditor; }
     void SetClearWorld(bool NewState) { bClearWorld = NewState; }
+
+    void SetIsInit(bool InIsInit) { bIsInit = InIsInit; }
+    bool GetIsInit() const { return bIsInit; }
+    bool GetIsMoving() const { return bIsMoving; }
+    bool GetIsMoved() const { return bIsMoved; }
+    void UpdateIsMoved() { bIsMoved = bIsMoving;  }
 };

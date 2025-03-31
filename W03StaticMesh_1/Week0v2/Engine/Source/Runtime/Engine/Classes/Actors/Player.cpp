@@ -146,6 +146,7 @@ void AEditorPlayer::Input()
     {
         IsF1Pressed = true;
         GEngineLoop.SetClearWorld(true);
+        GEngineLoop.SetIsInit(true);
         return;
     }
 
@@ -184,6 +185,8 @@ void AEditorPlayer::Input()
                 GEngineLoop.GetWorld()->GetRootOctree()->Insert(Comp);
             }
         }
+
+        GEngineLoop.SetIsInit(true);
     }
 }
 

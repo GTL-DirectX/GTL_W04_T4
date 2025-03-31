@@ -61,7 +61,6 @@ void UWorld::ReleaseBaseObject()
         GUObjectArray.MarkRemoveObject(EditorPlayer);
         EditorPlayer = nullptr;
     }
-
 }
 
 void UWorld::Tick(float DeltaTime)

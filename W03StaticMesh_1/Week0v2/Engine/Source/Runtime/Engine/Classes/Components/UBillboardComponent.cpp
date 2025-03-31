@@ -105,10 +105,12 @@ void UBillboardComponent::CreateQuadTextureVertexBuffer()
 	vertexTextureBuffer = FEngineLoop::renderer.CreateVertexBuffer(quadTextureVertices, sizeof(quadTextureVertices));
 	indexTextureBuffer = FEngineLoop::renderer.CreateIndexBuffer(quadTextureInices, sizeof(quadTextureInices));
 
-	if (!vertexTextureBuffer) {
+	if (!vertexTextureBuffer)
+    {
 		Console::GetInstance().AddLog(LogLevel::Warning, "Buffer Error");
 	}
-	if (!indexTextureBuffer) {
+	if (!indexTextureBuffer)
+    {
 		Console::GetInstance().AddLog(LogLevel::Warning, "Buffer Error");
 	}
 }

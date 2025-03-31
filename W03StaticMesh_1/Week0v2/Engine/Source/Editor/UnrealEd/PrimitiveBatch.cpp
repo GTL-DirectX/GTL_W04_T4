@@ -11,7 +11,8 @@ UPrimitiveBatch::UPrimitiveBatch()
 
 UPrimitiveBatch::~UPrimitiveBatch()
 {
-    if (pVertexBuffer) {
+    if (pVertexBuffer)
+    {
         pVertexBuffer->Release();
         pVertexBuffer = nullptr;
     }
@@ -42,8 +43,8 @@ void UPrimitiveBatch::RenderBatch(const FMatrix& View, const FMatrix& Projection
 
     FMatrix Model = FMatrix::Identity;
     FMatrix MVP = Model * View * Projection;
-    FMatrix NormalMatrix = FMatrix::Transpose(FMatrix::Inverse(Model));
-    FEngineLoop::renderer.UpdateConstant(MVP, NormalMatrix, FVector4(0,0,0,0), false);
+    //FMatrix NormalMatrix = FMatrix::Transpose(FMatrix::Inverse(Model));
+    FEngineLoop::renderer.UpdateConstant(MVP, false);//, NormalMatrix, FVector4(0,0,0,0), false);
     FEngineLoop::renderer.UpdateGridConstantBuffer(GridParam);
 
     UpdateBoundingBoxResources();
@@ -57,17 +58,21 @@ void UPrimitiveBatch::RenderBatch(const FMatrix& View, const FMatrix& Projection
     BoundingBoxes.Empty();
     Cones.Empty();
     OrientedBoundingBoxes.Empty();
-    FEngineLoop::renderer.PrepareShader();
+    //FEngineLoop::renderer.PrepareShader();    //TODO: Delete Duplicate
 }
+
 void UPrimitiveBatch::InitializeVertexBuffer()
 {
     if (!pVertexBuffer)
+    {
         pVertexBuffer = FEngineLoop::renderer.CreateStaticVerticesBuffer();
+    }
 }
 
 void UPrimitiveBatch::UpdateBoundingBoxResources()
 {
-    if (BoundingBoxes.Num() > allocatedBoundingBoxCapacity) {
+    if (BoundingBoxes.Num() > allocatedBoundingBoxCapacity)
+    {
         allocatedBoundingBoxCapacity = BoundingBoxes.Num();
 
         ReleaseBoundingBoxResources();
@@ -76,21 +81,29 @@ void UPrimitiveBatch::UpdateBoundingBoxResources()
         pBoundingBoxSRV = FEngineLoop::renderer.CreateBoundingBoxSRV(pBoundingBoxBuffer, static_cast<UINT>(allocatedBoundingBoxCapacity));
     }
 
-    if (pBoundingBoxBuffer && pBoundingBoxSRV){
+    if (pBoundingBoxBuffer && pBoundingBoxSRV)
+    {
         int boundingBoxCount = static_cast<int>(BoundingBoxes.Num());
         FEngineLoop::renderer.UpdateBoundingBoxBuffer(pBoundingBoxBuffer, BoundingBoxes, boundingBoxCount);
     }
 }
 
-void UPrimitiveBatch::ReleaseBoundingBoxResources()
+void UPrimitiveBatch::ReleaseBoundingBoxResources() const
 {
-    if (pBoundingBoxBuffer) pBoundingBoxBuffer->Release();
-    if (pBoundingBoxSRV) pBoundingBoxSRV->Release();
+    if (pBoundingBoxBuffer)
+    {
+        pBoundingBoxBuffer->Release();
+    }
+    if (pBoundingBoxSRV)
+    {
+        pBoundingBoxSRV->Release();
+    }
 }
 
 void UPrimitiveBatch::UpdateConeResources()
 {
-    if (Cones.Num() > allocatedConeCapacity) {
+    if (Cones.Num() > allocatedConeCapacity)
+    {
         allocatedConeCapacity = Cones.Num();
 
         ReleaseConeResources();
@@ -99,21 +112,29 @@ void UPrimitiveBatch::UpdateConeResources()
         pConesSRV = FEngineLoop::renderer.CreateConeSRV(pConesBuffer, static_cast<UINT>(allocatedConeCapacity));
     }
 
-    if (pConesBuffer && pConesSRV) {
+    if (pConesBuffer && pConesSRV)
+    {
         int coneCount = static_cast<int>(Cones.Num());
         FEngineLoop::renderer.UpdateConesBuffer(pConesBuffer, Cones, coneCount);
     }
 }
 
-void UPrimitiveBatch::ReleaseConeResources()
+void UPrimitiveBatch::ReleaseConeResources() const
 {
-    if (pConesBuffer) pConesBuffer->Release();
-    if (pConesSRV) pConesSRV->Release();
+    if (pConesBuffer)
+    {
+        pConesBuffer->Release();
+    }
+    if (pConesSRV)
+    {
+        pConesSRV->Release();
+    }
 }
 
 void UPrimitiveBatch::UpdateOBBResources()
 {
-    if (OrientedBoundingBoxes.Num() > allocatedOBBCapacity) {
+    if (OrientedBoundingBoxes.Num() > allocatedOBBCapacity)
+    {
         allocatedOBBCapacity = OrientedBoundingBoxes.Num();
 
         ReleaseOBBResources();
@@ -122,16 +143,25 @@ void UPrimitiveBatch::UpdateOBBResources()
         pOBBSRV = FEngineLoop::renderer.CreateOBBSRV(pOBBBuffer, static_cast<UINT>(allocatedOBBCapacity));
     }
 
-    if (pOBBBuffer && pOBBSRV) {
+    if (pOBBBuffer && pOBBSRV)
+    {
         int obbCount = static_cast<int>(OrientedBoundingBoxes.Num());
         FEngineLoop::renderer.UpdateOBBBuffer(pOBBBuffer, OrientedBoundingBoxes, obbCount);
     }
 }
-void UPrimitiveBatch::ReleaseOBBResources()
+
+void UPrimitiveBatch::ReleaseOBBResources() const
 {
-    if (pOBBBuffer) pOBBBuffer->Release();
-    if (pOBBSRV) pOBBSRV->Release();
+    if (pOBBBuffer)
+    {
+        pOBBBuffer->Release();
+    }
+    if (pOBBSRV)
+    {
+        pOBBSRV->Release();
+    }
 }
+
 void UPrimitiveBatch::RenderAABB(const FBoundingBox& localAABB, const FVector& center, const FMatrix& modelMatrix)
 {
     FVector localVertices[8] = {
@@ -163,23 +193,25 @@ void UPrimitiveBatch::RenderAABB(const FBoundingBox& localAABB, const FVector& c
         max.y = (worldVertices[i].y > max.y) ? worldVertices[i].y : max.y;
         max.z = (worldVertices[i].z > max.z) ? worldVertices[i].z : max.z;
     }
+
     FBoundingBox BoundingBox;
     BoundingBox.min = min;
     BoundingBox.max = max;
     // BoundingBoxes.Add(BoundingBox);
     BoundingBoxes.Add(GEngineLoop.GetWorld()->GetRootOctree()->Region);
     Octree* ROctree = GEngineLoop.GetWorld()->GetRootOctree();
+
     if (ROctree)
     {
         TArray<Octree*> NodesToVisit;
         NodesToVisit.Add(ROctree);
-    
+
         while (NodesToVisit.Num() > 0)
         {
             Octree* CurrentNode = NodesToVisit[0];
             BoundingBoxes.Add(CurrentNode->Region);
             NodesToVisit.Remove(CurrentNode);
-        
+
             // 현재 노드의 자식들을 순회하여 스택에 추가
             for (const auto& Child : CurrentNode->Children)
             {
@@ -190,8 +222,8 @@ void UPrimitiveBatch::RenderAABB(const FBoundingBox& localAABB, const FVector& c
             }
         }
     }
-    
 }
+
 void UPrimitiveBatch::RenderOBB(const FBoundingBox& localAABB, const FVector& center, const FMatrix& modelMatrix)
 {
     // 1) 로컬 AABB의 8개 꼭짓점
@@ -208,13 +240,13 @@ void UPrimitiveBatch::RenderOBB(const FBoundingBox& localAABB, const FVector& ce
     };
 
     FOBB faceBB;
-    for (int32 i = 0; i < 8; ++i) {
+    for (int32 i = 0; i < 8; ++i)
+    {
         // 모델 매트릭스로 점을 변환 후, center를 더해준다.
         faceBB.corners[i] =  center + FMatrix::TransformVector(localVertices[i], modelMatrix);
     }
 
     OrientedBoundingBoxes.Add(faceBB);
-
 }
 
 void UPrimitiveBatch::AddCone(const FVector& center, float radius, float height, int segments, const FVector4& color, const FMatrix& modelMatrix)
