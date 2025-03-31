@@ -31,7 +31,7 @@ public:
     //bool IntersectSphere(const FVector& Center, float Radius) const;
 
 private:
-    // Nead, Far, Left, Right, Top, Bottom
+    // Near, Far, Left, Right, Top, Bottom
     FPlane Planes[6];
 
 }; 
