@@ -1019,18 +1019,18 @@ void FRenderer::PrepareRender()
             if (!Cast<UGizmoBaseComponent>(iter))
                 StaticMeshObjs.Add(pStaticMeshComp);
         }
-        if (UGizmoBaseComponent* pGizmoComp = Cast<UGizmoBaseComponent>(iter))
-        {
-            GizmoObjs.Add(pGizmoComp);
-        }
-        if (UBillboardComponent* pBillboardComp = Cast<UBillboardComponent>(iter))
-        {
-            BillboardObjs.Add(pBillboardComp);
-        }
-        if (ULightComponentBase* pLightComp = Cast<ULightComponentBase>(iter))
-        {
-            LightObjs.Add(pLightComp);
-        }
+        // if (UGizmoBaseComponent* pGizmoComp = Cast<UGizmoBaseComponent>(iter))
+        // {
+        //     GizmoObjs.Add(pGizmoComp);
+        // }
+        // if (UBillboardComponent* pBillboardComp = Cast<UBillboardComponent>(iter))
+        // {
+        //     BillboardObjs.Add(pBillboardComp);
+        // }
+        // if (ULightComponentBase* pLightComp = Cast<ULightComponentBase>(iter))
+        // {
+        //     LightObjs.Add(pLightComp);
+        // }
     }
 }
 
@@ -1225,26 +1225,9 @@ void FRenderer::FrustumCulling(std::shared_ptr<FEditorViewportClient> ActiveView
     TArray<UStaticMeshComponent*> NewStaticMeshObjs;
 
     FScopeCycleCounter frustumCullingTimer{ TEXT("FrustumCulling") };
-    for (UStaticMeshComponent* StaticMesh : StaticMeshObjs)
-    {
-        if (!StaticMesh)
-            continue;
+    const FCameraFrustum& Frustum = ActiveViewport->GetCameraFrustum();
+    GEngineLoop.GetWorld()->GetRootOctree()->QueryFrustum(Frustum, NewStaticMeshObjs);
 
-        // Bounding Box
-        /*if (ActiveViewport->GetCameraFrustum().IntersectMesh(StaticMesh->GetWorldSpaceBoundingBox()))
-        {
-            NewStaticMeshObjs.Emplace(StaticMesh);
-        }*/
-
-        // Bounding Sphere
-        if (ActiveViewport->GetCameraFrustum().IntersectMesh(StaticMesh->GetWorldSpaceBoundingSphere()))
-        {
-            NewStaticMeshObjs.Emplace(StaticMesh);
-        }
-
-    }
-
-    //UE_LOG(LogLevel::Display, "FrustumCulling : %d -> %d", StaticMeshObjs.Num(), NewStaticMeshObjs.Num());
     StaticMeshObjs = NewStaticMeshObjs;
 }
 

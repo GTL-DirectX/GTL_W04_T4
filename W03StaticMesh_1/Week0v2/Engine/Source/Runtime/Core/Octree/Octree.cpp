@@ -1,11 +1,15 @@
 ﻿#include "Octree.h"
 
+#include <mutex>
+
+#include "Camera/CameraFrustum.h"
 #include "Components/PrimitiveComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "Math/JungleMath.h"
 
 bool Octree::bReadyTree = false;
 bool Octree::bBuildTree = false;
-uint32 Octree::Capacity = 256;
+uint32 Octree::Capacity = 255;
 
 Octree::Octree() : Parent(nullptr), ActiveNodeMask(0)
 {
@@ -15,7 +19,7 @@ Octree::Octree(const FBoundingBox& InRegion) : Region(InRegion), Parent(nullptr)
 {
 }
 
-Octree::Octree(const FBoundingBox& InRegion, const TArray<AActor*>& InActors) : Region(InRegion), Actors(InActors), Parent(nullptr), ActiveNodeMask(0)
+Octree::Octree(const FBoundingBox& InRegion, const TArray<UStaticMeshComponent*>& InActors) : Region(InRegion), ActorComps(InActors), Parent(nullptr), ActiveNodeMask(0)
 {
 }
 
@@ -43,9 +47,9 @@ FBoundingBox Octree::GetLooseRegion()
     return LooseRegion;
 }
 
-void Octree::Insert(AActor* Actor)
+void Octree::Insert(UStaticMeshComponent* ActorComp)
 {
-    FBoundingBox ActorBoundingBox = Cast<UPrimitiveComponent>(Actor->GetRootComponent())->GetWorldSpaceBoundingBox();
+    FBoundingBox ActorBoundingBox = ActorComp->GetWorldSpaceBoundingBox();
     
     // 현재 Actor의 바운딩 박스가 영역에 포함되는지 확인
     if (!GetLooseRegion().IntersectToRay(ActorBoundingBox.min, ActorBoundingBox.max, *(new float)))
@@ -56,8 +60,8 @@ void Octree::Insert(AActor* Actor)
     // 현재 노드가 Leaf-node (자식이 없을 때)
     if (!Children[0])
     {
-        Actors.Add(Actor);
-        if (Actors.Num() > Capacity && Region.Size() > MinSize)
+        ActorComps.Add(ActorComp);
+        if (ActorComps.Num() > Capacity && Region.Size() > MinSize)
         {
             BuildTree();
         }
@@ -69,7 +73,7 @@ void Octree::Insert(AActor* Actor)
         FVector HalfSize = BoxSize * 0.5f;
 
         int Octant = GetOctant(ActorCenter, HalfSize);
-        Children[Octant]->Insert(Actor);
+        Children[Octant]->Insert(ActorComp);
     }
 }
 
@@ -86,6 +90,7 @@ void Octree::UpdateTree()
 
 void Octree::BuildTree()
 {
+    UE_LOG(LogLevel::Display, "BuildTree: Actors=%d, Size=%f", ActorComps.Num(), Region.Size());
     // 현재 노드가 이미 분할되어 있다면 리턴
     if (Children[0])
     {
@@ -107,22 +112,22 @@ void Octree::BuildTree()
     }
 
     // 기존 액터들을 자식 노드로 분배
-    TArray<AActor*> ActorsToDistribute = Actors;
-    Actors.Empty(); // 현재 노드의 Actors를 비움
+    TArray<UStaticMeshComponent*> ActorsToDistribute = ActorComps;
+    ActorComps.Empty(); // 현재 노드의 Actors를 비움
 
-    for (AActor* Actor : ActorsToDistribute)
+    for (UStaticMeshComponent* ActorComp : ActorsToDistribute)
     {
-        FBoundingBox ActorBoundingBox = Cast<UPrimitiveComponent>(Actor->GetRootComponent())->GetWorldSpaceBoundingBox();
+        FBoundingBox ActorBoundingBox = ActorComp->GetWorldSpaceBoundingBox();
         FVector actorCenter = (ActorBoundingBox.min + ActorBoundingBox.max) * 0.5f;
         int octant = GetOctant(actorCenter, HalfSize);
 
         // 자식 노드에 삽입 (재귀적으로 분할 가능)
-        Children[octant]->Insert(Actor);
+        Children[octant]->Insert(ActorComp);
         ActiveNodeMask |= (1 << octant);
     }
 }
 
-void Octree::QueryTree(const FVector& RayOrigin, const FVector& RayDirection, TArray<AActor*>& OutActors)
+void Octree::QueryTree(const FVector& RayOrigin, const FVector& RayDirection, TArray<UStaticMeshComponent*>& OutActors)
 {
     float OutDistance = 0.0f;
     
@@ -134,7 +139,7 @@ void Octree::QueryTree(const FVector& RayOrigin, const FVector& RayDirection, TA
     // 2. Leaf 노드라면 액터 추가
     if (!Children[0]) // 자식이 없으면 Leaf 노드
     {
-        for (auto Actor : Actors)
+        for (auto Actor : ActorComps)
         {
             OutActors.Add(Actor);
         }
@@ -154,45 +159,62 @@ void Octree::QueryTree(const FVector& RayOrigin, const FVector& RayDirection, TA
     }
 }
 
-void Octree::QueryTreeWithBounds(const FRay& Ray, const FBoundingBox& Bounds, TArray<AActor*>& OutActors)
+void Octree::QueryFrustum(const FCameraFrustum& Frustum, TArray<UStaticMeshComponent*>& OutComponents)
 {
-    float OutDistance = 0.0f;
-
-    // 1. 현재 노드의 느슨한 영역이 Ray와 교차하는지 확인
-    if (!GetLooseRegion().IntersectToRay(Ray.Origin, Ray.Direction, OutDistance))
+    if (!Frustum.IntersectMesh(GetLooseRegion()))
     {
         return;
     }
 
-    // 2. Bounds와 노드의 경계 상자가 교차하는지 확인
-    if (!Bounds.Intersect(GetLooseRegion()))
+    for (auto Comp : ActorComps)
     {
-        return;
-    }
-
-    // 3. 교차하는 경우에만 액터 추가
-    for (auto Actor : Actors)
-    {
-        // 액터의 경계 상자가 Bounds와 교차하는지 확인 (효율성을 위해 선택적)
-        if (Cast<UPrimitiveComponent>(Actor->GetRootComponent())->GetBoundingBox().Intersect(Bounds))
+        if (Comp && Frustum.IntersectMesh(Comp->GetWorldSpaceBoundingBox()))
         {
-            OutActors.Add(Actor);
+            OutComponents.Add(Comp);
         }
     }
 
-    // 4. 자식 노드 탐색
-    if (Children[0])
+    if (!Children[0])
     {
-        for (const auto& Child : Children)
+        return;
+    }
+
+    std::mutex mtx;
+    std::vector<std::thread> threads;
+    std::vector<TArray<UStaticMeshComponent*>> childResults(Children.size());
+    int activeThreads = 0;
+
+    for (const auto& Child : Children)
+    {
+        if (Child && Frustum.IntersectMesh(Child->GetLooseRegion()))
         {
-            Child->QueryTreeWithBounds(Ray, Bounds, OutActors);
+            threads.emplace_back([&childResults, activeThreads, &Child, &Frustum, &mtx]() {
+                TArray<UStaticMeshComponent*> localComponents;
+                Child->QueryFrustum(Frustum, localComponents);
+                std::lock_guard<std::mutex> lock(mtx);
+                childResults[activeThreads] = std::move(localComponents);
+            });
+            activeThreads++;
+        }
+    }
+
+    for (auto& thread : threads)
+    {
+        thread.join();
+    }
+
+    for (int i = 0; i < activeThreads; ++i)
+    {
+        for (auto Comp : childResults[i])
+        {
+            OutComponents.Add(Comp);
         }
     }
 }
 
 void Octree::ClearTree()
 {
-    Actors.Empty();
+    ActorComps.Empty();
 
     for (auto& Child : Children)
     {
