@@ -74,6 +74,14 @@ struct FObjInfo
     TArray<FMaterialSubset> MaterialSubsets;
 };
 
+// Face
+struct FObjFace
+{
+    TArray<uint32> VertexIndices;
+    TArray<uint32> TextureIndices;
+    TArray<uint32> NormalIndices;
+};
+
 struct FObjMaterialInfo
 {
     FString MTLName;  // newmtl : Material Name.
@@ -119,7 +127,7 @@ namespace OBJ
         FString DisplayName;
         
         TArray<FVertexSimple> Vertices;
-        TArray<UINT> Indices;
+        TArray<UINT> Indices;   // 삼각형 단위로 정렬된 인덱스
 
         ID3D11Buffer* VertexBuffer;
         ID3D11Buffer* IndexBuffer;

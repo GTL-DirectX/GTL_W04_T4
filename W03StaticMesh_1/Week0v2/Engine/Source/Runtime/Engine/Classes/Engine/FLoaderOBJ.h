@@ -31,17 +31,22 @@ struct FLoaderOBJ
         size_t dotPos = fileName.find_last_of('.');
         if (dotPos != std::string::npos) {
             OutObjInfo.DisplayName = fileName.substr(0, dotPos);
-        } else {
+        }
+        else {
             OutObjInfo.DisplayName = fileName;
         }
-        
+
         std::string Line;
+        FString CurrentMaterial = FString("Default");
+
+        // 머티리얼 이름별 Face 데이터 저장
+        TMap<FString, TArray<FObjFace>> MaterialFaceMap;
 
         while (std::getline(OBJ, Line))
         {
             if (Line.empty() || Line[0] == '#')
                 continue;
-            
+
             std::istringstream LineStream(Line);
             std::string Token;
             LineStream >> Token;
@@ -56,19 +61,25 @@ struct FLoaderOBJ
             if (Token == "usemtl")
             {
                 LineStream >> Line;
-                FString MatName(Line);
-
-                if (!OutObjInfo.MaterialSubsets.IsEmpty())
+                CurrentMaterial = FString(Line);
+                if (!MaterialFaceMap.Contains(CurrentMaterial))
                 {
-                    FMaterialSubset& LastSubset = OutObjInfo.MaterialSubsets[OutObjInfo.MaterialSubsets.Num() - 1];
-                    LastSubset.IndexCount = OutObjInfo.VertexIndices.Num() - LastSubset.IndexStart;
+                    MaterialFaceMap.Add(CurrentMaterial, TArray<FObjFace>());
                 }
-                
-                FMaterialSubset MaterialSubset;
-                MaterialSubset.MaterialName = MatName;
-                MaterialSubset.IndexStart = OutObjInfo.VertexIndices.Num();
-                MaterialSubset.IndexCount = 0;
-                OutObjInfo.MaterialSubsets.Add(MaterialSubset);
+                continue;
+
+                //FString MatName(Line);
+                //if (!OutObjInfo.MaterialSubsets.IsEmpty())
+                //{
+                //    FMaterialSubset& LastSubset = OutObjInfo.MaterialSubsets[OutObjInfo.MaterialSubsets.Num() - 1];
+                //    LastSubset.IndexCount = OutObjInfo.VertexIndices.Num() - LastSubset.IndexStart;
+                //}
+                //
+                //FMaterialSubset MaterialSubset;
+                //MaterialSubset.MaterialName = MatName;
+                //MaterialSubset.IndexStart = OutObjInfo.VertexIndices.Num();
+                //MaterialSubset.IndexCount = 0;
+                //OutObjInfo.MaterialSubsets.Add(MaterialSubset);
             }
 
             if (Token == "g" || Token == "o")
@@ -82,7 +93,7 @@ struct FLoaderOBJ
             {
                 float x, y, z;
                 LineStream >> x >> y >> z;
-                OutObjInfo.Vertices.Add(FVector(x,y,z));
+                OutObjInfo.Vertices.Add(FVector(x, y, z));
                 continue;
             }
 
@@ -90,7 +101,7 @@ struct FLoaderOBJ
             {
                 float nx, ny, nz;
                 LineStream >> nx >> ny >> nz;
-                OutObjInfo.Normals.Add(FVector(nx,ny,nz));
+                OutObjInfo.Normals.Add(FVector(nx, ny, nz));
                 continue;
             }
 
@@ -107,7 +118,7 @@ struct FLoaderOBJ
                 TArray<uint32> faceVertexIndices;  // 이번 페이스의 정점 인덱스
                 TArray<uint32> faceNormalIndices;  // 이번 페이스의 법선 인덱스
                 TArray<uint32> faceTextureIndices; // 이번 페이스의 텍스처 인덱스
-                
+
                 while (LineStream >> Token)
                 {
                     std::istringstream tokenStream(Token);
@@ -130,47 +141,70 @@ struct FLoaderOBJ
                     faceNormalIndices.Add(normalIndex);
                 }
 
+                TArray<FObjFace> FacesToAdd;
                 if (faceVertexIndices.Num() == 4) // 쿼드
                 {
-                    // 첫 번째 삼각형: 0-1-2
-                    OutObjInfo.VertexIndices.Add(faceVertexIndices[0]);
-                    OutObjInfo.VertexIndices.Add(faceVertexIndices[1]);
-                    OutObjInfo.VertexIndices.Add(faceVertexIndices[2]);
+                    // 쿼드 -> 두 개의 삼각형으로 분할
+                    FObjFace face1, face2;
 
-                    OutObjInfo.TextureIndices.Add(faceTextureIndices[0]);
-                    OutObjInfo.TextureIndices.Add(faceTextureIndices[1]);
-                    OutObjInfo.TextureIndices.Add(faceTextureIndices[2]);
+                    // 첫 번째 삼각형: 0,1,2
+                    face1.VertexIndices = { faceVertexIndices[0], faceVertexIndices[1], faceVertexIndices[2] };
+                    face1.TextureIndices = { faceTextureIndices[0], faceTextureIndices[1], faceTextureIndices[2] };
+                    face1.NormalIndices = { faceNormalIndices[0],  faceNormalIndices[1],  faceNormalIndices[2] };
 
-                    OutObjInfo.NormalIndices.Add(faceNormalIndices[0]);
-                    OutObjInfo.NormalIndices.Add(faceNormalIndices[1]);
-                    OutObjInfo.NormalIndices.Add(faceNormalIndices[2]);
+                    // 두 번째 삼각형: 0,2,3
+                    face2.VertexIndices = { faceVertexIndices[0], faceVertexIndices[2], faceVertexIndices[3] };
+                    face2.TextureIndices = { faceTextureIndices[0], faceTextureIndices[2], faceTextureIndices[3] };
+                    face2.NormalIndices = { faceNormalIndices[0],  faceNormalIndices[2],  faceNormalIndices[3] };
 
-                    // 두 번째 삼각형: 0-2-3
-                    OutObjInfo.VertexIndices.Add(faceVertexIndices[0]);
-                    OutObjInfo.VertexIndices.Add(faceVertexIndices[2]);
-                    OutObjInfo.VertexIndices.Add(faceVertexIndices[3]);
+                    FacesToAdd.Add(face1);
+                    FacesToAdd.Add(face2);
 
-                    OutObjInfo.TextureIndices.Add(faceTextureIndices[0]);
-                    OutObjInfo.TextureIndices.Add(faceTextureIndices[2]);
-                    OutObjInfo.TextureIndices.Add(faceTextureIndices[3]);
+                    //// 첫 번째 삼각형: 0-1-2
+                    //OutObjInfo.VertexIndices.Add(faceVertexIndices[0]);
+                    //OutObjInfo.VertexIndices.Add(faceVertexIndices[1]);
+                    //OutObjInfo.VertexIndices.Add(faceVertexIndices[2]);
 
-                    OutObjInfo.NormalIndices.Add(faceNormalIndices[0]);
-                    OutObjInfo.NormalIndices.Add(faceNormalIndices[2]);
-                    OutObjInfo.NormalIndices.Add(faceNormalIndices[3]);
+                    //OutObjInfo.TextureIndices.Add(faceTextureIndices[0]);
+                    //OutObjInfo.TextureIndices.Add(faceTextureIndices[1]);
+                    //OutObjInfo.TextureIndices.Add(faceTextureIndices[2]);
+
+                    //OutObjInfo.NormalIndices.Add(faceNormalIndices[0]);
+                    //OutObjInfo.NormalIndices.Add(faceNormalIndices[1]);
+                    //OutObjInfo.NormalIndices.Add(faceNormalIndices[2]);
+
+                    //// 두 번째 삼각형: 0-2-3
+                    //OutObjInfo.VertexIndices.Add(faceVertexIndices[0]);
+                    //OutObjInfo.VertexIndices.Add(faceVertexIndices[2]);
+                    //OutObjInfo.VertexIndices.Add(faceVertexIndices[3]);
+
+                    //OutObjInfo.TextureIndices.Add(faceTextureIndices[0]);
+                    //OutObjInfo.TextureIndices.Add(faceTextureIndices[2]);
+                    //OutObjInfo.TextureIndices.Add(faceTextureIndices[3]);
+
+                    //OutObjInfo.NormalIndices.Add(faceNormalIndices[0]);
+                    //OutObjInfo.NormalIndices.Add(faceNormalIndices[2]);
+                    //OutObjInfo.NormalIndices.Add(faceNormalIndices[3]);
                 }
                 else if (faceVertexIndices.Num() == 3) // 삼각형
                 {
-                    OutObjInfo.VertexIndices.Add(faceVertexIndices[0]);
-                    OutObjInfo.VertexIndices.Add(faceVertexIndices[1]);
-                    OutObjInfo.VertexIndices.Add(faceVertexIndices[2]);
+                    FObjFace face;
+                    face.VertexIndices = faceVertexIndices;
+                    face.TextureIndices = faceTextureIndices;
+                    face.NormalIndices = faceNormalIndices;
+                    FacesToAdd.Add(face);
 
-                    OutObjInfo.TextureIndices.Add(faceTextureIndices[0]);
-                    OutObjInfo.TextureIndices.Add(faceTextureIndices[1]);
-                    OutObjInfo.TextureIndices.Add(faceTextureIndices[2]);
+                    //OutObjInfo.VertexIndices.Add(faceVertexIndices[0]);
+                    //OutObjInfo.VertexIndices.Add(faceVertexIndices[1]);
+                    //OutObjInfo.VertexIndices.Add(faceVertexIndices[2]);
 
-                    OutObjInfo.NormalIndices.Add(faceNormalIndices[0]);
-                    OutObjInfo.NormalIndices.Add(faceNormalIndices[1]);
-                    OutObjInfo.NormalIndices.Add(faceNormalIndices[2]);
+                    //OutObjInfo.TextureIndices.Add(faceTextureIndices[0]);
+                    //OutObjInfo.TextureIndices.Add(faceTextureIndices[1]);
+                    //OutObjInfo.TextureIndices.Add(faceTextureIndices[2]);
+
+                    //OutObjInfo.NormalIndices.Add(faceNormalIndices[0]);
+                    //OutObjInfo.NormalIndices.Add(faceNormalIndices[1]);
+                    //OutObjInfo.NormalIndices.Add(faceNormalIndices[2]);
                 }
                 // // 삼각형화 (삼각형 팬 방식)
                 // for (int j = 1; j + 1 < faceVertexIndices.Num(); j++)
@@ -187,14 +221,60 @@ struct FLoaderOBJ
                 //     OutObjInfo.NormalIndices.Add(faceNormalIndices[j]);
                 //     OutObjInfo.NormalIndices.Add(faceNormalIndices[j + 1]);
                 // }
+
+                // 현재 머티리얼에 해당하는 face들 저장
+                for (const FObjFace& Face : FacesToAdd)
+                {
+                    MaterialFaceMap[CurrentMaterial].Add(Face);
+                }
             }
         }
+        OBJ.close();
 
-        if (!OutObjInfo.MaterialSubsets.IsEmpty())
+        //if (!OutObjInfo.MaterialSubsets.IsEmpty())
+        //{
+        //    FMaterialSubset& LastSubset = OutObjInfo.MaterialSubsets[OutObjInfo.MaterialSubsets.Num() - 1];
+        //    LastSubset.IndexCount = OutObjInfo.VertexIndices.Num() - LastSubset.IndexStart;
+        //}
+
+        // OutObjInfo Index 배열, MaterialSubsets 재구성
+        OutObjInfo.VertexIndices.Empty();
+        OutObjInfo.TextureIndices.Empty();
+        OutObjInfo.NormalIndices.Empty();
+        OutObjInfo.MaterialSubsets.Empty();
+
+        for (const auto& Pair : MaterialFaceMap)
         {
-            FMaterialSubset& LastSubset = OutObjInfo.MaterialSubsets[OutObjInfo.MaterialSubsets.Num() - 1];
-            LastSubset.IndexCount = OutObjInfo.VertexIndices.Num() - LastSubset.IndexStart;
+            uint32 GlobalIndexCount = 0;
+            
+            const FString& MatName = Pair.Key;
+            const TArray<FObjFace>& Faces = Pair.Value;
+
+            FMaterialSubset Subset;
+            Subset.MaterialName = MatName;
+            Subset.IndexStart = GlobalIndexCount;
+
+            for (const FObjFace& Face : Faces)
+            {
+                // face는 삼각형이므로 3개의 인덱스씩 추가
+                OutObjInfo.VertexIndices.Add(Face.VertexIndices[0]);
+                OutObjInfo.VertexIndices.Add(Face.VertexIndices[1]);
+                OutObjInfo.VertexIndices.Add(Face.VertexIndices[2]);
+
+                OutObjInfo.TextureIndices.Add(Face.TextureIndices[0]);
+                OutObjInfo.TextureIndices.Add(Face.TextureIndices[1]);
+                OutObjInfo.TextureIndices.Add(Face.TextureIndices[2]);
+
+                OutObjInfo.NormalIndices.Add(Face.NormalIndices[0]);
+                OutObjInfo.NormalIndices.Add(Face.NormalIndices[1]);
+                OutObjInfo.NormalIndices.Add(Face.NormalIndices[2]);
+
+                GlobalIndexCount += 3;
+            }
+            Subset.IndexCount = GlobalIndexCount - Subset.IndexStart;
+            OutObjInfo.MaterialSubsets.Add(Subset);
         }
+        
         
         return true;
     }
@@ -317,7 +397,10 @@ struct FLoaderOBJ
         // 고유 정점을 기반으로 FVertexSimple 배열 생성
         TMap<std::string, uint32> vertexMap; // 중복 체크용
 
-        for (int32 i = 0; i < RawData.VertexIndices.Num(); i++)
+        int32 numIndices = RawData.VertexIndices.Num();
+        int32 currentSubsetIndex = 0;
+
+        for (int32 i = 0; i < numIndices; i++)
         {
             uint32 vIdx = RawData.VertexIndices[i];
             uint32 tIdx = RawData.TextureIndices[i];
@@ -335,7 +418,6 @@ struct FLoaderOBJ
                 vertex.x = RawData.Vertices[vIdx].x;
                 vertex.y = RawData.Vertices[vIdx].y;
                 vertex.z = RawData.Vertices[vIdx].z;
-
                 vertex.r = 1.0f; vertex.g = 1.0f; vertex.b = 1.0f; vertex.a = 1.0f; // 기본 색상
 
                 if (tIdx != UINT32_MAX && tIdx < RawData.UVs.Num())
@@ -351,15 +433,30 @@ struct FLoaderOBJ
                     vertex.nz = RawData.Normals[nIdx].z;
                 }
 
-                for (int32 j = 0; j < OutStaticMesh.MaterialSubsets.Num(); j++)
+                //for (int32 j = 0; j < OutStaticMesh.MaterialSubsets.Num(); j++)
+                //{
+                //    const FMaterialSubset& subset = OutStaticMesh.MaterialSubsets[j];
+                //    if ( i >= subset.IndexStart && i < subset.IndexStart + subset.IndexCount)
+                //    {
+                //        vertex.MaterialIndex = subset.MaterialIndex;
+                //        break;
+                //    }
+                //}
+
+                // 현재 인덱스 i가 어느 MaterialSubset 범위에 속하는지 결정
+                // 반복문을 매번 전체 순회하는 대신, currentSubsetIndex를 유지하며 범위를 벗어나면 증가시킵니다.
+                while (currentSubsetIndex < OutStaticMesh.MaterialSubsets.Num() &&
+                    i >= OutStaticMesh.MaterialSubsets[currentSubsetIndex].IndexStart +
+                    OutStaticMesh.MaterialSubsets[currentSubsetIndex].IndexCount)
                 {
-                    const FMaterialSubset& subset = OutStaticMesh.MaterialSubsets[j];
-                    if ( i >= subset.IndexStart && i < subset.IndexStart + subset.IndexCount)
-                    {
-                        vertex.MaterialIndex = subset.MaterialIndex;
-                        break;
-                    }
+                    currentSubsetIndex++;
                 }
+                if (currentSubsetIndex < OutStaticMesh.MaterialSubsets.Num())
+                {
+                    vertex.MaterialIndex = OutStaticMesh.MaterialSubsets[currentSubsetIndex].MaterialIndex;
+                }
+                else
+                    vertex.MaterialIndex = 0;
                 
                 index = OutStaticMesh.Vertices.Num();
                 OutStaticMesh.Vertices.Add(vertex);
